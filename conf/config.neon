@@ -90,6 +90,12 @@ services:
 		class: PHPStan\Rules\Classes\AccessStaticPropertiesRule
 
 	-
+		class: PHPStan\Rules\Classes\AssignPropertyDefaultValueTypeRule
+
+	-
+		class: PHPStan\Rules\Classes\AssignPropertyValueTypeRule
+
+	-
 		class: PHPStan\Rules\Classes\ClassConstantRule
 
 	-
@@ -133,6 +139,8 @@ services:
 		setup:
 			- register(@PHPStan\Rules\Classes\AccessPropertiesRule)
 			- register(@PHPStan\Rules\Classes\AccessStaticPropertiesRule)
+			- register(@PHPStan\Rules\Classes\AssignPropertyDefaultValueTypeRule)
+			- register(@PHPStan\Rules\Classes\AssignPropertyValueTypeRule)
 			- register(@PHPStan\Rules\Classes\ClassConstantRule)
 			- register(@PHPStan\Rules\Classes\ExistingClassInInstanceOfRule)
 			- register(@PHPStan\Rules\Classes\InstantiationRule)
@@ -153,6 +161,9 @@ services:
 
 	-
 		class: PHPStan\Rules\Variables\DefinedVariableInAnonymousFunctionUseRule
+
+	-
+		class: PHPStan\Type\TypeChecker
 
 	broker:
 		class: PHPStan\Broker\Broker

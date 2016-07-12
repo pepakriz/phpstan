@@ -2,6 +2,8 @@
 
 namespace PHPStan\Type;
 
+use PHPStan\Analyser\Scope;
+
 class MixedType implements Type
 {
 
@@ -34,6 +36,16 @@ class MixedType implements Type
 	public function makeNullable(): Type
 	{
 		return new self(true);
+	}
+
+	public function accepts(Type $passed, Scope $scope): bool
+	{
+		return true;
+	}
+
+	public function describe(): string
+	{
+		return 'mixed';
 	}
 
 }

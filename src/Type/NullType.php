@@ -2,6 +2,8 @@
 
 namespace PHPStan\Type;
 
+use PHPStan\Analyser\Scope;
+
 class NullType implements Type
 {
 
@@ -26,6 +28,16 @@ class NullType implements Type
 	public function makeNullable(): Type
 	{
 		return $this;
+	}
+
+	public function accepts(Type $passed, Scope $scope): bool
+	{
+		return $passed instanceof self;
+	}
+
+	public function describe(): string
+	{
+		return 'null';
 	}
 
 }

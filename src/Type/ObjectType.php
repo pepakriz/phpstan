@@ -2,6 +2,8 @@
 
 namespace PHPStan\Type;
 
+use PHPStan\Analyser\Scope;
+
 class ObjectType implements Type
 {
 
@@ -46,6 +48,16 @@ class ObjectType implements Type
 	public function makeNullable(): Type
 	{
 		return new self($this->getClass(), true);
+	}
+
+	public function accepts(Type $passed, Scope $scope): bool
+	{
+		return $passed->getClass() !== null; // dummy - real implementation in TypeChecker
+	}
+
+	public function describe(): string
+	{
+		return sprintf('%s%s', $this->getClass(), $this->isNullable() ? '|null' : '');
 	}
 
 }

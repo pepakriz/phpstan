@@ -2,6 +2,8 @@
 
 namespace PHPStan\Type;
 
+use PHPStan\Analyser\Scope;
+
 class StaticType implements Type
 {
 
@@ -34,6 +36,16 @@ class StaticType implements Type
 	public function makeNullable(): Type
 	{
 		return new self(true);
+	}
+
+	public function accepts(Type $passed, Scope $scope): bool
+	{
+		return $passed->getClass() !== null; // todo, add special getter for base class and implement check in TypeChecker
+	}
+
+	public function describe(): string
+	{
+		return 'static';
 	}
 
 }

@@ -164,7 +164,16 @@ class Scope
 			$this->broker,
 			$this->printer,
 			$this->getFile(),
-			true
+			true,
+			$this->getClass(),
+			$this->getFunction(),
+			$this->getNamespace(),
+			$this->getVariableTypes(),
+			$this->isInClosureBind(),
+			$this->isInAnonymousClass() ? $this->getAnonymousClass() : null,
+			$this->getInFunctionCallName(),
+			$this->moreSpecificTypes,
+			$this->currentlyAssignedVariables
 		);
 	}
 
