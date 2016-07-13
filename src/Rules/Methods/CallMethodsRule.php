@@ -90,6 +90,7 @@ class CallMethodsRule implements \PHPStan\Rules\Rule
 
 		$errors = $this->check->check(
 			$methodReflection,
+			$scope,
 			$node,
 			[
 				'Method ' . $messagesMethodName . ' invoked with %d parameter, %d required.',
@@ -98,6 +99,7 @@ class CallMethodsRule implements \PHPStan\Rules\Rule
 				'Method ' . $messagesMethodName . ' invoked with %d parameters, at least %d required.',
 				'Method ' . $messagesMethodName . ' invoked with %d parameter, %d-%d required.',
 				'Method ' . $messagesMethodName . ' invoked with %d parameters, %d-%d required.',
+				'Parameter %d ($%s) of method ' . $messagesMethodName . ' expects %s, %s given.',
 			]
 		);
 

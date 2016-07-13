@@ -11,7 +11,15 @@ class CallableType implements Type
 
 	public function accepts(Type $passed, Scope $scope): bool
 	{
-		return $passed instanceof self;
+		if ($passed instanceof ObjectType) {
+			return $passed->getClass() === \Closure::class;
+		}
+
+		return in_array(get_class($passed), [
+			self::class,
+			StringType::class,
+			ArrayType::class,
+		], true);
 	}
 
 	public function describe(): string

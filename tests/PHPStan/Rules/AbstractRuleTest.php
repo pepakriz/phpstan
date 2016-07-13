@@ -5,12 +5,16 @@ namespace PHPStan\Rules;
 use PHPStan\Analyser\Analyser;
 use PHPStan\Analyser\Error;
 use PHPStan\Analyser\NodeScopeResolver;
+use PHPStan\Type\TypeChecker;
 
 abstract class AbstractRuleTest extends \PHPStan\TestCase
 {
 
 	/** @var \PHPStan\Analyser\Analyser */
 	private $analyser;
+
+	/** @var \PHPStan\Rules\FunctionCallParametersCheck */
+	private $functionCallParametersCheck;
 
 	abstract protected function getRule(): Rule;
 
@@ -77,6 +81,15 @@ abstract class AbstractRuleTest extends \PHPStan\TestCase
 				count($result)
 			)
 		);
+	}
+
+	protected function getFunctionCallParametersCheck(): FunctionCallParametersCheck
+	{
+		if ($this->functionCallParametersCheck === null) {
+			$this->functionCallParametersCheck = new FunctionCallParametersCheck(new TypeChecker($this->createBroker()));
+		}
+
+		return $this->functionCallParametersCheck;
 	}
 
 }

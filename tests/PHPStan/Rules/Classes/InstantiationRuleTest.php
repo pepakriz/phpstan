@@ -2,8 +2,6 @@
 
 namespace PHPStan\Rules\Classes;
 
-use PHPStan\Rules\FunctionCallParametersCheck;
-
 class InstantiationRuleTest extends \PHPStan\Rules\AbstractRuleTest
 {
 
@@ -11,7 +9,7 @@ class InstantiationRuleTest extends \PHPStan\Rules\AbstractRuleTest
 	{
 		return new InstantiationRule(
 			$this->createBroker(),
-			new FunctionCallParametersCheck()
+			$this->getFunctionCallParametersCheck()
 		);
 	}
 

@@ -52,6 +52,7 @@ class CallToFunctionParametersRule implements \PHPStan\Rules\Rule
 
 		return $this->check->check(
 			$function,
+			$scope,
 			$node,
 			[
 				'Function ' . $function->getName() . ' invoked with %d parameter, %d required.',
@@ -60,6 +61,7 @@ class CallToFunctionParametersRule implements \PHPStan\Rules\Rule
 				'Function ' . $function->getName() . ' invoked with %d parameters, at least %d required.',
 				'Function ' . $function->getName() . ' invoked with %d parameter, %d-%d required.',
 				'Function ' . $function->getName() . ' invoked with %d parameters, %d-%d required.',
+				'Parameter %d ($%s) of function ' . $function->getName() . ' expects %s, %s given.',
 			]
 		);
 	}

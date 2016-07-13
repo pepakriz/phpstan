@@ -28,6 +28,7 @@ class TypeChecker
 			return $destination->isNullable();
 		}
 		if (($destination->getClass() === null) !== ($passed->getClass() === null)) {
+			// todo nefunguje pro callable
 			return false;
 		}
 

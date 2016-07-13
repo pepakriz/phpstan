@@ -2,8 +2,6 @@
 
 namespace PHPStan\Rules\Functions;
 
-use PHPStan\Rules\FunctionCallParametersCheck;
-
 class CallToFunctionParametersRuleTest extends \PHPStan\Rules\AbstractRuleTest
 {
 
@@ -11,7 +9,7 @@ class CallToFunctionParametersRuleTest extends \PHPStan\Rules\AbstractRuleTest
 	{
 		return new CallToFunctionParametersRule(
 			$this->createBroker(),
-			new FunctionCallParametersCheck()
+			$this->getFunctionCallParametersCheck()
 		);
 	}
 

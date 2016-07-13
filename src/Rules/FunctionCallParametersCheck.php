@@ -2,18 +2,31 @@
 
 namespace PHPStan\Rules;
 
+use PHPStan\Analyser\Scope;
 use PHPStan\Reflection\ParametersAcceptor;
+use PHPStan\Type\TypeChecker;
 
 class FunctionCallParametersCheck
 {
 
 	/**
+	 * @var \PHPStan\Type\TypeChecker
+	 */
+	private $typeChecker;
+
+	public function __construct(TypeChecker $typeChecker)
+	{
+		$this->typeChecker = $typeChecker;
+	}
+
+	/**
 	 * @param \PHPStan\Reflection\ParametersAcceptor $function
+	 * @param \PHPStan\Analyser\Scope $scope
 	 * @param \PhpParser\Node\Expr\FuncCall|\PhpParser\Node\Expr\MethodCall|\PhpParser\Node\Expr\StaticCall $funcCall
-	 * @param string[] $messages Six message templates
+	 * @param string[] $messages Seven message templates
 	 * @return string[]
 	 */
-	public function check(ParametersAcceptor $function, $funcCall, array $messages): array
+	public function check(ParametersAcceptor $function, Scope $scope, $funcCall, array $messages): array
 	{
 		$functionParametersMinCount = 0;
 		$functionParametersMaxCount = 0;
@@ -25,14 +38,18 @@ class FunctionCallParametersCheck
 			$functionParametersMaxCount++;
 		}
 
+		$checkTypes = true;
+
 		if ($function->isVariadic()) {
 			$functionParametersMaxCount = -1;
+			$checkTypes = false;
 		}
 
 		$invokedParametersCount = count($funcCall->args);
 		foreach ($funcCall->args as $arg) {
 			if ($arg->unpack) {
 				$invokedParametersCount = max($functionParametersMinCount, $functionParametersMaxCount);
+				$checkTypes = false;
 				break;
 			}
 		}
@@ -70,6 +87,29 @@ class FunctionCallParametersCheck
 					$functionParametersMaxCount
 				)];
 			}
+		} elseif ($checkTypes) {
+			$args = $funcCall->args;
+			$parameters = $function->getParameters();
+
+			$errors = [];
+			foreach ($parameters as $i => $parameter) {
+				if (!isset($args[$i])) {
+					break;
+				}
+				$argumentType = $scope->getType($args[$i]->value);
+				if (!$this->typeChecker->accepts($parameter->getType(), $argumentType, $scope)) {
+
+					$errors[] = sprintf(
+						$messages[6],
+						$i + 1,
+						$parameter->getName(),
+						$parameter->getType()->describe(),
+						$argumentType->describe()
+					);
+				}
+			}
+
+			return $errors;
 		}
 
 		return [];
