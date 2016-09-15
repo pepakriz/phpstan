@@ -116,6 +116,9 @@ services:
 		class: PHPStan\Rules\Functions\CallToFunctionParametersRule
 
 	-
+		class: PHPStan\Rules\Functions\CallToInternalFunctionRule
+
+	-
 		class: PHPStan\Rules\Functions\CallToNonExistentFunctionRule
 
 	-
@@ -148,6 +151,7 @@ services:
 			- register(@PHPStan\Rules\Classes\RequireParentConstructCallRule)
 			- register(@PHPStan\Rules\Exceptions\CatchedExceptionExistenceRule)
 			- register(@PHPStan\Rules\Functions\CallToNonExistentFunctionRule)
+			- register(@PHPStan\Rules\Functions\CallToInternalFunctionRule)
 			- register(@PHPStan\Rules\Functions\CallToFunctionParametersRule)
 			- register(@PHPStan\Rules\Functions\ExistingClassesInClosureTypehintsRule)
 			- register(@PHPStan\Rules\Functions\ExistingClassesInTypehintsRule)
