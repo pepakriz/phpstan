@@ -137,6 +137,9 @@ services:
 		class: PHPStan\Rules\Methods\CallStaticMethodsRule
 
 	-
+		class: PHPStan\Rules\Methods\CallToInternalMethodRule
+
+	-
 		class: PHPStan\Rules\Methods\ExistingClassesInTypehintsRule
 
 	-
@@ -158,6 +161,7 @@ services:
 			- register(@PHPStan\Rules\Functions\PrintfParametersRule)
 			- register(@PHPStan\Rules\Methods\CallMethodsRule)
 			- register(@PHPStan\Rules\Methods\CallStaticMethodsRule)
+			- register(@PHPStan\Rules\Methods\CallToInternalMethodRule)
 			- register(@PHPStan\Rules\Methods\ExistingClassesInTypehintsRule)
 			- register(@PHPStan\Rules\Variables\DefinedVariableRule)
 
