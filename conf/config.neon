@@ -89,6 +89,9 @@ services:
 		class: PHPStan\Rules\FunctionDefinitionCheck
 
 	-
+		class: PHPStan\Rules\FunctionMissingReturnCheck
+
+	-
 		class: PHPStan\Rules\FunctionReturnTypeCheck
 
 	-

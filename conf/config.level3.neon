@@ -18,7 +18,17 @@ services:
 			- phpstan.rules.rule
 
 	-
+		class: PHPStan\Rules\Functions\ClosureMissingReturnRule
+		tags:
+			- phpstan.rules.rule
+
+	-
 		class: PHPStan\Rules\Functions\ClosureReturnTypeRule
+		tags:
+			- phpstan.rules.rule
+
+	-
+		class: PHPStan\Rules\Methods\MissingReturnRule
 		tags:
 			- phpstan.rules.rule
 
