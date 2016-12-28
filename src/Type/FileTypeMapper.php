@@ -18,26 +18,21 @@ class FileTypeMapper
 	/** @var \Nette\Caching\Cache */
 	private $cache;
 
-	/** @var bool */
-	private $enableUnionTypes;
-
 	/** @var mixed[] */
 	private $memoryCache = [];
 
 	public function __construct(
 		Parser $parser,
-		\Nette\Caching\Cache $cache,
-		bool $enableUnionTypes
+		\Nette\Caching\Cache $cache
 	)
 	{
 		$this->parser = $parser;
 		$this->cache = $cache;
-		$this->enableUnionTypes = $enableUnionTypes;
 	}
 
 	public function getTypeMap(string $fileName): array
 	{
-		$cacheKey = sprintf('%s-%d-v15-%d', $fileName, filemtime($fileName), $this->enableUnionTypes ? 1 : 0);
+		$cacheKey = sprintf('%s-%d-v16', $fileName, filemtime($fileName));
 		if (isset($this->memoryCache[$cacheKey])) {
 			return $this->memoryCache[$cacheKey];
 		}
@@ -133,49 +128,15 @@ class FileTypeMapper
 	private function getTypeFromTypeString(string $typeString, string $className = null, NameScope $nameScope): Type
 	{
 		$typeParts = explode('|', $typeString);
-		$typePartsWithoutNull = array_values(array_filter($typeParts, function ($part) {
-			return strtolower($part) !== 'null';
-		}));
-		if (count($typePartsWithoutNull) === 0) {
-			return new NullType();
+
+		$types = [];
+		foreach ($typeParts as $typePart) {
+			$types[] = TypehintHelper::getTypeObjectFromTypehint($typePart, false, $className, $nameScope);
 		}
 
-		$isNullable = count($typeParts) !== count($typePartsWithoutNull);
-		if (count($typePartsWithoutNull) > 1) {
-			if ($this->enableUnionTypes) {
-				$otherTypes = [];
-
-				/** @var \PHPStan\Type\IterableType $iterableType */
-				$iterableType = null;
-				$onlyOneItemType = true;
-				foreach ($typePartsWithoutNull as $typePart) {
-					$type = TypehintHelper::getTypeObjectFromTypehint($typePart, false, $className, $nameScope);
-					if ($type instanceof IterableType) {
-						if ($iterableType !== null) {
-							if ($onlyOneItemType) {
-								$otherTypes[] = $iterableType;
-							}
-							$otherTypes[] = $type;
-							$onlyOneItemType = false;
-						} else {
-							$iterableType = $type;
-						}
-					} else {
-						$otherTypes[] = $type;
-					}
-				}
-
-				if ($iterableType !== null && $onlyOneItemType) {
-					return new UnionIterableType($iterableType->getItemType(), $isNullable, $otherTypes);
-				}
-
-				return new CommonUnionType($otherTypes, $isNullable);
-			}
-
-			return new MixedType($isNullable);
-		}
-
-		return TypehintHelper::getTypeObjectFromTypehint($typePartsWithoutNull[0], $isNullable, $className, $nameScope);
+		return count($types) > 1
+			? new UnionType($types)
+			: $types[0];
 	}
 
 	/**

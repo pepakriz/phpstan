@@ -6,6 +6,11 @@ use PhpParser\Node\Expr\PropertyFetch;
 use PHPStan\Analyser\Scope;
 use PHPStan\Broker\Broker;
 use PHPStan\Rules\RuleLevelHelper;
+use PHPStan\Type\ClassType;
+use PHPStan\Type\MixedType;
+use PHPStan\Type\ObjectType;
+use PHPStan\Type\Type;
+use PHPStan\Type\UnionType;
 
 class AccessPropertiesRule implements \PHPStan\Rules\Rule
 {
@@ -57,16 +62,52 @@ class AccessPropertiesRule implements \PHPStan\Rules\Rule
 		}
 
 		$type = $scope->getType($node->var);
+
+		return $this->checkType($type, $node, $scope);
+	}
+
+	/**
+	 * @param \PHPStan\Type\Type $type
+	 * @param \PhpParser\Node\Expr\PropertyFetch $node
+	 * @param \PHPStan\Analyser\Scope $scope
+	 * @return string[]
+	 */
+	private function checkType(Type $type, PropertyFetch $node, Scope $scope): array
+	{
+		if ($type instanceof UnionType) {
+			$errors = [];
+			foreach ($type->getNestedTypes() as $nestedType) {
+				$errors = $this->checkType($nestedType, $node, $scope);
+
+				if (count($errors) === 0) {
+					return [];
+				}
+			}
+
+			return $errors;
+		}
+
+		if ($type instanceof MixedType) {
+			return [];
+		}
+
+		if (!($type instanceof ClassType)) {
+			return [
+				sprintf('Cannot access property $%s on %s.', $node->name, $type->describe()),
+			];
+		}
+
 		if (!$type->canAccessProperties()) {
 			return [
 				sprintf('Cannot access property $%s on %s.', $node->name, $type->describe()),
 			];
 		}
-		$propertyClass = $type->getClass();
-		if ($propertyClass === null) {
+
+		if (!($type instanceof ObjectType)) {
 			return [];
 		}
 
+		$propertyClass = $type->getClass();
 		$name = $node->name;
 		if (!$this->broker->hasClass($propertyClass)) {
 			return [

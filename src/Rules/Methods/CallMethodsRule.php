@@ -8,6 +8,11 @@ use PHPStan\Analyser\Scope;
 use PHPStan\Broker\Broker;
 use PHPStan\Rules\FunctionCallParametersCheck;
 use PHPStan\Rules\RuleLevelHelper;
+use PHPStan\Type\ClassType;
+use PHPStan\Type\MixedType;
+use PHPStan\Type\ObjectType;
+use PHPStan\Type\Type;
+use PHPStan\Type\UnionType;
 
 class CallMethodsRule implements \PHPStan\Rules\Rule
 {
@@ -66,16 +71,57 @@ class CallMethodsRule implements \PHPStan\Rules\Rule
 		}
 
 		$type = $scope->getType($node->var);
+
+		return $this->processType($type, $node, $scope);
+	}
+
+	/**
+	 * @param \PHPStan\Type\Type $type
+	 * @param \PhpParser\Node\Expr\MethodCall $node
+	 * @param \PHPStan\Analyser\Scope $scope
+	 * @return string[]
+	 */
+	public function processType(Type $type, MethodCall $node, Scope $scope): array
+	{
+		if ($type instanceof UnionType) {
+			$errors = [];
+			foreach ($type->getNestedTypes() as $nestedType) {
+				$errors = $this->processType($nestedType, $node, $scope);
+				if (count($errors) === 0) {
+					return [];
+				}
+			}
+
+			if (count($errors) > 0) {
+				return [
+					sprintf('Cannot call method %s() on %s.', $node->name, $type->describe()),
+				];
+			}
+
+			return [];
+		}
+
+		if ($type instanceof MixedType) {
+			return [];
+		}
+
+		if (!($type instanceof ClassType)) {
+			return [
+				sprintf('Cannot call method %s() on %s.', $node->name, $type->describe()),
+			];
+		}
+
 		if (!$type->canCallMethods()) {
 			return [
 				sprintf('Cannot call method %s() on %s.', $node->name, $type->describe()),
 			];
 		}
-		$methodClass = $type->getClass();
-		if ($methodClass === null) {
+
+		if (!($type instanceof ObjectType)) {
 			return [];
 		}
 
+		$methodClass = $type->getClass();
 		$name = $node->name;
 		if (!$this->broker->hasClass($methodClass)) {
 			return [

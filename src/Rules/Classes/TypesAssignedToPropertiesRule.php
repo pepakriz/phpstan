@@ -5,6 +5,7 @@ namespace PHPStan\Rules\Classes;
 use PhpParser\Node;
 use PhpParser\Node\Expr\Assign;
 use PHPStan\Analyser\Scope;
+use PHPStan\Type\ObjectType;
 
 class TypesAssignedToPropertiesRule implements \PHPStan\Rules\Rule
 {
@@ -65,7 +66,7 @@ class TypesAssignedToPropertiesRule implements \PHPStan\Rules\Rule
 				return null;
 			}
 			$propertyHolderType = $scope->getType($propertyFetch->var);
-			if ($propertyHolderType->getClass() === null) {
+			if (!($propertyHolderType instanceof ObjectType)) {
 				return null;
 			}
 

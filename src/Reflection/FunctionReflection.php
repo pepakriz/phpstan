@@ -8,6 +8,7 @@ use PHPStan\Parser\Parser;
 use PHPStan\Reflection\Php\DummyOptionalParameter;
 use PHPStan\Reflection\Php\PhpParameterReflection;
 use PHPStan\Type\IntegerType;
+use PHPStan\Type\NullType;
 use PHPStan\Type\Type;
 use PHPStan\Type\TypehintHelper;
 
@@ -84,7 +85,7 @@ class FunctionReflection implements ParametersAcceptor
 				// PHP bug #70960
 				$this->parameters[] = new DummyOptionalParameter(
 					'sort_flags',
-					new IntegerType(false)
+					new IntegerType()
 				);
 			}
 		}
@@ -157,7 +158,7 @@ class FunctionReflection implements ParametersAcceptor
 			if (
 				$returnType !== null
 				&& $phpDocReturnType !== null
-				&& $returnType->allowsNull() !== $phpDocReturnType->isNullable()
+				&& $returnType->allowsNull() !== $phpDocReturnType->accepts(new NullType())
 			) {
 				$phpDocReturnType = null;
 			}

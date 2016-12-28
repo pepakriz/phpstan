@@ -7,6 +7,7 @@ use PHPStan\Analyser\Scope;
 use PHPStan\Type\BooleanType;
 use PHPStan\Type\MixedType;
 use PHPStan\Type\NullType;
+use PHPStan\Type\Type;
 use PHPStan\Type\UnionType;
 
 class StrictComparisonOfDifferentTypesRule implements \PHPStan\Rules\Rule
@@ -31,13 +32,49 @@ class StrictComparisonOfDifferentTypesRule implements \PHPStan\Rules\Rule
 		$leftType = $scope->getType($node->left);
 		$rightType = $scope->getType($node->right);
 
+		if ($this->validateTypes($leftType, $rightType)) {
+			return [];
+		}
+
+		return [
+			sprintf(
+				'Strict comparison using %s between %s and %s will always evaluate to false.',
+				$node instanceof Node\Expr\BinaryOp\Identical ? '===' : '!==',
+				$leftType->describe(),
+				$rightType->describe()
+			),
+		];
+	}
+
+	private function validateTypes(Type $leftType, Type $rightType): bool
+	{
+		if ($leftType instanceof UnionType) {
+			foreach ($leftType->getNestedTypes() as $nestedType) {
+				if ($this->validateTypes($nestedType, $rightType)) {
+					return true;
+				}
+			}
+
+			return false;
+		}
+
+		if ($rightType instanceof UnionType) {
+			foreach ($rightType->getNestedTypes() as $nestedType) {
+				if ($this->validateTypes($leftType, $nestedType)) {
+					return true;
+				}
+			}
+
+			return false;
+		}
+
 		if (
 			$leftType instanceof MixedType
 			|| $rightType instanceof MixedType
 			|| $leftType instanceof NullType
 			|| $rightType instanceof NullType
 		) {
-			return [];
+			return true;
 		}
 
 		if ($leftType instanceof UnionType || $rightType instanceof UnionType) {
@@ -56,18 +93,7 @@ class StrictComparisonOfDifferentTypesRule implements \PHPStan\Rules\Rule
 			$isSameType = get_class($leftType) === get_class($rightType);
 		}
 
-		if (!$isSameType) {
-			return [
-				sprintf(
-					'Strict comparison using %s between %s and %s will always evaluate to false.',
-					$node instanceof Node\Expr\BinaryOp\Identical ? '===' : '!==',
-					$leftType->describe(),
-					$rightType->describe()
-				),
-			];
-		}
-
-		return [];
+		return $isSameType;
 	}
 
 }

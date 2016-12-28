@@ -5,47 +5,24 @@ namespace PHPStan\Type;
 class CallableType implements Type
 {
 
-	/** @var bool */
-	private $nullable;
-
-	public function __construct(bool $nullable)
-	{
-		$this->nullable = $nullable;
-	}
-
-	/**
-	 * @return string|null
-	 */
-	public function getClass()
-	{
-		return null;
-	}
-
-	public function isNullable(): bool
-	{
-		return $this->nullable;
-	}
-
 	public function combineWith(Type $otherType): Type
 	{
+		if ($otherType instanceof UnionType) {
+			return $otherType->combineWith($this);
+		}
+
 		if ($otherType instanceof self) {
-			return new self($this->isNullable() || $otherType->isNullable());
+			return $this;
 		}
 
 		if ($otherType instanceof ArrayType && $otherType->isPossiblyCallable()) {
 			return $this;
 		}
 
-		if ($otherType instanceof NullType) {
-			return $this->makeNullable();
-		}
-
-		return new MixedType($this->isNullable() || $otherType->isNullable());
-	}
-
-	public function makeNullable(): Type
-	{
-		return new self(true);
+		return new UnionType([
+			$this,
+			$otherType,
+		]);
 	}
 
 	public function accepts(Type $type): bool
@@ -54,8 +31,8 @@ class CallableType implements Type
 			return true;
 		}
 
-		if ($this->isNullable() && $type instanceof NullType) {
-			return true;
+		if ($type instanceof UnionType) {
+			return $type->accepts($this);
 		}
 
 		if ($type instanceof ArrayType && $type->isPossiblyCallable()) {
@@ -66,11 +43,7 @@ class CallableType implements Type
 			return true;
 		}
 
-		if ($type->getClass() === 'Closure') {
-			return true;
-		}
-
-		if ($type instanceof UnionType && UnionTypeHelper::acceptsAll($this, $type)) {
+		if ($type instanceof ObjectType && $type->getClass() === 'Closure') {
 			return true;
 		}
 
@@ -79,22 +52,7 @@ class CallableType implements Type
 
 	public function describe(): string
 	{
-		return 'callable' . ($this->nullable ? '|null' : '');
-	}
-
-	public function canAccessProperties(): bool
-	{
-		return false;
-	}
-
-	public function canCallMethods(): bool
-	{
-		return true;
-	}
-
-	public function isDocumentableNatively(): bool
-	{
-		return true;
+		return 'callable';
 	}
 
 }

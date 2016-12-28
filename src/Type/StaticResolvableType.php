@@ -2,7 +2,7 @@
 
 namespace PHPStan\Type;
 
-interface StaticResolvableType extends Type
+interface StaticResolvableType extends ClassType
 {
 
 	public function resolveStatic(string $className): Type;

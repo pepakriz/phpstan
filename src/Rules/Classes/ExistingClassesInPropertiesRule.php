@@ -7,6 +7,7 @@ use PhpParser\Node\Stmt\PropertyProperty;
 use PHPStan\Analyser\Scope;
 use PHPStan\Broker\Broker;
 use PHPStan\Type\ArrayType;
+use PHPStan\Type\ObjectType;
 
 class ExistingClassesInPropertiesRule implements \PHPStan\Rules\Rule
 {
@@ -44,7 +45,10 @@ class ExistingClassesInPropertiesRule implements \PHPStan\Rules\Rule
 
 		if ($propertyType instanceof ArrayType) {
 			$nestedItemType = $propertyType->getNestedItemType();
-			if ($nestedItemType->getItemType()->getClass() !== null && !$this->broker->hasClass($nestedItemType->getItemType()->getClass())) {
+			if (
+				$nestedItemType->getItemType() instanceof ObjectType
+				&& !$this->broker->hasClass($nestedItemType->getItemType()->getClass())
+			) {
 				return [
 					sprintf(
 						'Property %s::$%s has unknown class %s as its array type.',
@@ -56,7 +60,7 @@ class ExistingClassesInPropertiesRule implements \PHPStan\Rules\Rule
 			}
 		}
 
-		if ($propertyType->getClass() === null) {
+		if (!($propertyType instanceof ObjectType)) {
 			return [];
 		}
 

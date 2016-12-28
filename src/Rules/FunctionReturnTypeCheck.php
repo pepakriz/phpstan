@@ -6,65 +6,75 @@ use PhpParser\Node\Expr;
 use PHPStan\Analyser\Scope;
 use PHPStan\Type\MixedType;
 use PHPStan\Type\Type;
+use PHPStan\Type\UnionType;
 use PHPStan\Type\VoidType;
 
 class FunctionReturnTypeCheck
 {
 
-	/**
-	 * @param \PHPStan\Analyser\Scope $scope
-	 * @param \PHPStan\Type\Type $returnType
-	 * @param \PhpParser\Node\Expr|null $returnValue
-	 * @param string $emptyReturnStatementMessage
-	 * @param string $voidMessage
-	 * @param string $typeMismatchMessage
-	 * @param bool $isAnonymousFunction
-	 * @return string[]
-	 */
 	public function checkReturnType(
 		Scope $scope,
 		Type $returnType,
-		Expr $returnValue = null,
-		string $emptyReturnStatementMessage,
-		string $voidMessage,
-		string $typeMismatchMessage,
-		bool $isAnonymousFunction = false
-	): array
+		Expr $returnValue = null
+	)
 	{
-		if ($returnValue === null) {
-			if ($returnType instanceof VoidType || $returnType instanceof MixedType) {
-				return [];
+		if ($returnType instanceof UnionType) {
+			foreach ($returnType->getNestedTypes() as $nestedType) {
+				try {
+					$this->checkReturnType(
+						$scope,
+						$nestedType,
+						$returnValue
+					);
+					return;
+				} catch (\PHPStan\Rules\EmptyReturnStatementException $e) {
+					// ignore
+				} catch (\PHPStan\Rules\VoidReturnStatementException $e) {
+					// ignore
+				} catch (\PHPStan\Rules\TypeMismatchReturnStatementException $e) {
+					// ignore
+				}
 			}
 
-			return [
-				sprintf(
-					$emptyReturnStatementMessage,
-					$returnType->describe()
-				),
-			];
+			if ($e instanceof \PHPStan\Rules\EmptyReturnStatementException) {
+				throw new \PHPStan\Rules\EmptyReturnStatementException($returnType);
+			}
+
+			if ($e instanceof \PHPStan\Rules\VoidReturnStatementException) {
+				throw new \PHPStan\Rules\VoidReturnStatementException($returnType, $e->getReturnType());
+			}
+
+			if ($e instanceof \PHPStan\Rules\TypeMismatchReturnStatementException) {
+				throw new \PHPStan\Rules\TypeMismatchReturnStatementException($returnType, $e->getReturnType());
+			}
+		}
+
+		if ($returnValue === null) {
+			if ($returnType instanceof VoidType || $returnType instanceof MixedType) {
+				return;
+			}
+
+			throw new \PHPStan\Rules\EmptyReturnStatementException($returnType);
 		}
 
 		$returnValueType = $scope->getType($returnValue);
 		if ($returnType instanceof VoidType) {
-			return [
-				sprintf(
-					$voidMessage,
-					$returnValueType->describe()
-				),
-			];
+			throw new \PHPStan\Rules\VoidReturnStatementException($returnType, $returnValueType);
 		}
 
-		if (!$returnType->accepts($returnValueType) && (!$isAnonymousFunction || $returnValueType->isDocumentableNatively())) {
-			return [
-				sprintf(
-					$typeMismatchMessage,
-					$returnType->describe(),
-					$returnValueType->describe()
-				),
-			];
+		if ($returnValueType instanceof UnionType) {
+			foreach ($returnValueType->getNestedTypes() as $nestedType) {
+				if ($returnType->accepts($nestedType)) {
+					return;
+				}
+			}
+
+			throw new \PHPStan\Rules\TypeMismatchReturnStatementException($returnType, $returnValueType);
 		}
 
-		return [];
+		if (!$returnType->accepts($returnValueType)) {
+			throw new \PHPStan\Rules\TypeMismatchReturnStatementException($returnType, $returnValueType);
+		}
 	}
 
 }

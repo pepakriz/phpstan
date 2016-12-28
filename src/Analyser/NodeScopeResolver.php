@@ -53,6 +53,7 @@ use PHPStan\Type\CommentHelper;
 use PHPStan\Type\FileTypeMapper;
 use PHPStan\Type\MixedType;
 use PHPStan\Type\NestedArrayItemType;
+use PHPStan\Type\ObjectType;
 use PHPStan\Type\Type;
 use PHPStan\Type\TypehintHelper;
 
@@ -146,7 +147,7 @@ class NodeScopeResolver
 						$assignByReference = $lastParameter->isPassedByReference();
 					}
 					if ($assignByReference && $value instanceof Variable && is_string($value->name)) {
-						$scope = $scope->assignVariable($value->name, new MixedType(true));
+						$scope = $scope->assignVariable($value->name, new MixedType());
 					}
 				}
 			}
@@ -265,7 +266,7 @@ class NodeScopeResolver
 			if (isset($node->args[2])) {
 				$argValue = $node->args[2]->value;
 				$argValueType = $scope->getType($argValue);
-				if ($argValueType->getClass() !== null) {
+				if ($argValueType instanceof ObjectType) {
 					$scopeClass = $argValueType->getClass();
 				} elseif (
 					$argValue instanceof Expr\ClassConstFetch
@@ -406,8 +407,10 @@ class NodeScopeResolver
 		} elseif ($node instanceof Expr\StaticCall) {
 			$scope = $scope->enterFunctionCall($node);
 		} elseif ($node instanceof MethodCall) {
+			$type = $scope->getType($node->var);
 			if (
-				$scope->getType($node->var)->getClass() === 'Closure'
+				$type instanceof ObjectType
+				&& $type->getClass() === 'Closure'
 				&& $node->name === 'call'
 				&& isset($node->args[0])
 			) {
@@ -646,7 +649,7 @@ class NodeScopeResolver
 
 					$arg = $node->args[$i]->value;
 					if ($arg instanceof Variable && is_string($arg->name)) {
-						$scope = $scope->assignVariable($arg->name, new MixedType(true));
+						$scope = $scope->assignVariable($arg->name, new MixedType());
 					}
 				}
 			}
@@ -822,8 +825,7 @@ class NodeScopeResolver
 
 			if ($var instanceof Variable && is_string($var->name)) {
 				$arrayType = ArrayType::createDeepArrayType(
-					new NestedArrayItemType($subNodeType !== null ? $subNodeType : new MixedType(true), $depth),
-					false
+					new NestedArrayItemType($subNodeType !== null ? $subNodeType : new MixedType(), $depth)
 				);
 				if ($scope->hasVariableType($var->name)) {
 					$arrayType = $scope->getVariableType($var->name)->combineWith($arrayType);
@@ -921,7 +923,7 @@ class NodeScopeResolver
 			}
 
 			$methodCalledOnType = $scope->getType($statement->var);
-			if ($methodCalledOnType->getClass() === null) {
+			if (!($methodCalledOnType instanceof ObjectType)) {
 				return false;
 			}
 
@@ -957,7 +959,7 @@ class NodeScopeResolver
 			}
 		} elseif ($functionCall instanceof MethodCall && is_string($functionCall->name)) {
 			$type = $scope->getType($functionCall->var);
-			if ($type->getClass() !== null && $this->broker->hasClass($type->getClass())) {
+			if ($type instanceof ObjectType && $this->broker->hasClass($type->getClass())) {
 				$classReflection = $this->broker->getClass($type->getClass());
 				$methodName = $functionCall->name;
 				if ($classReflection->hasMethod($methodName)) {

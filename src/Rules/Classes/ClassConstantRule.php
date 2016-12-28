@@ -6,6 +6,7 @@ use PhpParser\Node;
 use PhpParser\Node\Expr\ClassConstFetch;
 use PHPStan\Analyser\Scope;
 use PHPStan\Broker\Broker;
+use PHPStan\Type\ObjectType;
 
 class ClassConstantRule implements \PHPStan\Rules\Rule
 {
@@ -37,7 +38,7 @@ class ClassConstantRule implements \PHPStan\Rules\Rule
 			$className = (string) $class;
 		} elseif ($class instanceof Node\Expr) {
 			$classType = $scope->getType($class);
-			if ($classType->getClass() !== null) {
+			if ($classType instanceof ObjectType) {
 				$className = $classType->getClass();
 			} else {
 				return [];

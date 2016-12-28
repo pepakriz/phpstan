@@ -10,6 +10,7 @@ use PHPStan\Reflection\MethodReflection;
 use PHPStan\Reflection\ParametersAcceptor;
 use PHPStan\Type\IntegerType;
 use PHPStan\Type\MixedType;
+use PHPStan\Type\NullType;
 use PHPStan\Type\StringType;
 use PHPStan\Type\Type;
 use PHPStan\Type\TypehintHelper;
@@ -99,11 +100,11 @@ class PhpMethodReflection implements MethodReflection
 				// PHP bug #71077
 				$this->parameters[] = new DummyOptionalParameter(
 					'flags',
-					new IntegerType(false)
+					new IntegerType()
 				);
 				$this->parameters[] = new DummyOptionalParameter(
 					'iterator_class',
-					new StringType(false)
+					new StringType()
 				);
 			}
 
@@ -115,7 +116,7 @@ class PhpMethodReflection implements MethodReflection
 				// PHP bug #71416
 				$this->parameters[1] = new DummyOptionalParameter(
 					'parameter',
-					new MixedType(true),
+					new MixedType(),
 					false,
 					true
 				);
@@ -216,7 +217,7 @@ class PhpMethodReflection implements MethodReflection
 			if (
 				$returnType !== null
 				&& $phpDocReturnType !== null
-				&& $returnType->allowsNull() !== $phpDocReturnType->isNullable()
+				&& $returnType->allowsNull() !== $phpDocReturnType->accepts(new NullType())
 			) {
 				$phpDocReturnType = null;
 			}

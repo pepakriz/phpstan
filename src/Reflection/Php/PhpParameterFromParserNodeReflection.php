@@ -5,6 +5,7 @@ namespace PHPStan\Reflection\Php;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\ConstFetch;
 use PhpParser\Node\Name;
+use PHPStan\Type\NullType;
 use PHPStan\Type\Type;
 use PHPStan\Type\TypehintHelper;
 
@@ -70,7 +71,7 @@ class PhpParameterFromParserNodeReflection implements \PHPStan\Reflection\Parame
 			$phpDocType = $this->phpDocType;
 			if ($phpDocType !== null && $this->defaultValue !== null) {
 				if ($this->defaultValue instanceof ConstFetch && $this->defaultValue->name instanceof Name) {
-					$phpDocType = $phpDocType->makeNullable();
+					$phpDocType = $phpDocType->combineWith(new NullType());
 				}
 			}
 			$this->type = TypehintHelper::decideType($this->realType, $phpDocType);

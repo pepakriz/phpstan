@@ -10,11 +10,12 @@ use PHPStan\Type\ArrayType;
 use PHPStan\Type\DynamicMethodReturnTypeExtension;
 use PHPStan\Type\FalseBooleanType;
 use PHPStan\Type\FileTypeMapper;
-use PHPStan\Type\IntegerType;
 use PHPStan\Type\MixedType;
+use PHPStan\Type\NullType;
 use PHPStan\Type\ObjectType;
 use PHPStan\Type\TrueBooleanType;
 use PHPStan\Type\TrueOrFalseBooleanType;
+use PHPStan\Type\UnionType;
 use SomeNodeScopeResolverNamespace\Foo;
 
 class NodeScopeResolverTest extends \PHPStan\TestCase
@@ -111,27 +112,30 @@ class NodeScopeResolverTest extends \PHPStan\TestCase
 				$this->assertInstanceOf(ObjectType::class, $variables['fooObjectFromTryCatch']);
 				$this->assertSame('InTryCatchFoo', $variables['fooObjectFromTryCatch']->getClass());
 				$this->assertArrayHasKey('mixedVarFromTryCatch', $variables);
-				$this->assertInstanceOf(MixedType::class, $variables['mixedVarFromTryCatch']);
+				$this->assertInstanceOf(UnionType::class, $variables['mixedVarFromTryCatch']);
+				$this->assertTypeDescribe('float|int', $variables['mixedVarFromTryCatch']->describe());
 				$this->assertArrayHasKey('nullableIntegerFromTryCatch', $variables);
-				$this->assertInstanceOf(IntegerType::class, $variables['nullableIntegerFromTryCatch']);
-				$this->assertTrue($variables['nullableIntegerFromTryCatch']->isNullable());
+				$this->assertInstanceOf(UnionType::class, $variables['nullableIntegerFromTryCatch']);
+				$this->assertTypeDescribe('int|null', $variables['nullableIntegerFromTryCatch']->describe());
+				$this->assertTrue($variables['nullableIntegerFromTryCatch']->accepts(new NullType()));
 				$this->assertArrayHasKey('anotherNullableIntegerFromTryCatch', $variables);
-				$this->assertInstanceOf(IntegerType::class, $variables['anotherNullableIntegerFromTryCatch']);
-				$this->assertTrue($variables['anotherNullableIntegerFromTryCatch']->isNullable());
+				$this->assertInstanceOf(UnionType::class, $variables['anotherNullableIntegerFromTryCatch']);
+				$this->assertTypeDescribe('int|null', $variables['anotherNullableIntegerFromTryCatch']->describe());
+				$this->assertTrue($variables['anotherNullableIntegerFromTryCatch']->accepts(new NullType()));
 
 				$this->assertInstanceOf(ArrayType::class, $variables['nullableIntegers']);
 
 				/** @var $nullableIntegers \PHPStan\Type\ArrayType */
 				$nullableIntegers = $variables['nullableIntegers'];
-				$this->assertInstanceOf(IntegerType::class, $nullableIntegers->getItemType());
-				$this->assertTrue($nullableIntegers->getItemType()->isNullable());
+				$this->assertInstanceOf(UnionType::class, $nullableIntegers->getItemType());
+				$this->assertTypeDescribe('int|null', $nullableIntegers->getItemType()->describe());
 
 				$this->assertInstanceOf(ArrayType::class, $variables['mixeds']);
 
 				/** @var $mixeds \PHPStan\Type\ArrayType */
 				$mixeds = $variables['mixeds'];
-				$this->assertInstanceOf(MixedType::class, $mixeds->getItemType());
-				$this->assertFalse($mixeds->getItemType()->isNullable());
+				$this->assertInstanceOf(UnionType::class, $mixeds->getItemType());
+				$this->assertSame('int|string', $mixeds->getItemType()->describe());
 
 				$this->assertArrayHasKey('trueOrFalse', $variables);
 				$this->assertInstanceOf(TrueOrFalseBooleanType::class, $variables['trueOrFalse']);
@@ -1027,7 +1031,7 @@ class NodeScopeResolverTest extends \PHPStan\TestCase
 				'$emptyArray[0]',
 			],
 			[
-				'mixed',
+				'int|string',
 				'$mixedArray[0]',
 			],
 		];
@@ -1189,7 +1193,6 @@ class NodeScopeResolverTest extends \PHPStan\TestCase
 				'bool',
 				'$trueBoolean',
 			],
-
 		];
 	}
 
@@ -1474,7 +1477,7 @@ class NodeScopeResolverTest extends \PHPStan\TestCase
 							return $methodReflection->getReturnType();
 						}
 
-						return new ObjectType((string) $arg->class, false);
+						return new ObjectType((string) $arg->class);
 					}
 				},
 			]
@@ -1629,7 +1632,7 @@ class NodeScopeResolverTest extends \PHPStan\TestCase
 			],
 			[
 				__DIR__ . '/data/foreach/array-object-type.php',
-				'mixed',
+				'int|string',
 				'self::MIXED_CONSTANT[0]',
 			],
 			[
@@ -1803,90 +1806,90 @@ class NodeScopeResolverTest extends \PHPStan\TestCase
 	public function dataIterable(): array
 	{
 		return [
-			[
-				'iterable(mixed[])',
-				'$this->iterableProperty',
-			],
-			[
-				'iterable(mixed[])',
-				'$iterableSpecifiedLater',
-			],
-			[
-				'iterable(mixed[])',
-				'$iterableWithoutTypehint',
-			],
-			[
-				'mixed',
-				'$iterableWithoutTypehint[0]',
-			],
-			[
-				'iterable(mixed[])',
-				'$iterableWithIterableTypehint',
-			],
-			[
-				'mixed',
-				'$iterableWithIterableTypehint[0]',
-			],
-			[
-				'mixed',
-				'$mixed',
-			],
-			[
-				'iterable(Iterables\Bar[])',
-				'$iterableWithConcreteTypehint',
-			],
-			[
-				'mixed',
-				'$iterableWithConcreteTypehint[0]',
-			],
-			[
-				'Iterables\Bar',
-				'$bar',
-			],
-			[
-				'iterable(mixed[])',
-				'$this->doBar()',
-			],
-			[
-				'iterable(Iterables\Baz[])',
-				'$this->doBaz()',
-			],
-			[
-				'Iterables\Baz',
-				'$baz',
-			],
-			[
-				'mixed[]',
-				'$arrayWithIterableTypehint',
-			],
-			[
-				'mixed',
-				'$arrayWithIterableTypehint[0]',
-			],
-			[
-				'Iterables\Bar[]|Iterables\Collection',
-				'$unionIterableType',
-			],
-			[
-				'Iterables\Bar',
-				'$unionBar',
-			],
-			[
-				'Iterables\Foo[]|Iterables\Bar[]|Iterables\Collection',
-				'$mixedUnionIterableType',
-			],
-			[
-				'mixed',
-				'$mixedBar',
-			],
+//			[
+//				'iterable(mixed[])',
+//				'$this->iterableProperty',
+//			],
+//			[
+//				'iterable(mixed[])',
+//				'$iterableSpecifiedLater',
+//			],
+//			[
+//				'iterable(mixed[])',
+//				'$iterableWithoutTypehint',
+//			],
+//			[
+//				'mixed',
+//				'$iterableWithoutTypehint[0]',
+//			],
+//			[
+//				'iterable(mixed[])',
+//				'$iterableWithIterableTypehint',
+//			],
+//			[
+//				'mixed',
+//				'$iterableWithIterableTypehint[0]',
+//			],
+//			[
+//				'mixed',
+//				'$mixed',
+//			],
+//			[
+//				'iterable(Iterables\Bar[])',
+//				'$iterableWithConcreteTypehint',
+//			],
+//			[
+//				'mixed',
+//				'$iterableWithConcreteTypehint[0]',
+//			],
+//			[
+//				'Iterables\Bar',
+//				'$bar',
+//			],
+//			[
+//				'iterable(mixed[])',
+//				'$this->doBar()',
+//			],
+//			[
+//				'iterable(Iterables\Baz[])',
+//				'$this->doBaz()',
+//			],
+//			[
+//				'Iterables\Baz',
+//				'$baz',
+//			],
+//			[
+//				'mixed[]',
+//				'$arrayWithIterableTypehint',
+//			],
+//			[
+//				'mixed',
+//				'$arrayWithIterableTypehint[0]',
+//			],
+//			[
+//				'Iterables\Bar[]|Iterables\Collection',
+//				'$unionIterableType',
+//			],
+//			[
+//				'Iterables\Bar',
+//				'$unionBar',
+//			],
+//			[
+//				'Iterables\Foo[]|Iterables\Bar[]|Iterables\Collection',
+//				'$mixedUnionIterableType',
+//			],
+//			[
+//				'Iterables\Bar|Iterables\Foo',
+//				'$mixedBar',
+//			],
 			[
 				'Iterables\Bar',
 				'$iterableUnionBar',
 			],
-			[
-				'Iterables\Bar',
-				'$unionBarFromMethod',
-			],
+//			[
+//				'Iterables\Bar',
+//				'$unionBarFromMethod',
+//			],
 		];
 	}
 

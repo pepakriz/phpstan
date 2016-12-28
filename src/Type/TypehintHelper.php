@@ -15,61 +15,76 @@ class TypehintHelper
 	): Type
 	{
 		if (strrpos($typehintString, '[]') === strlen($typehintString) - 2) {
-			$arr = new ArrayType(self::getTypeObjectFromTypehint(
+			$hintType = new ArrayType(self::getTypeObjectFromTypehint(
 				substr($typehintString, 0, -2),
 				false,
 				$selfClass,
 				$nameScope
-			), $isNullable);
-			return $arr;
+			));
+		} elseif ($typehintString === 'static' && $selfClass !== null) {
+			$hintType = new StaticType($selfClass);
+		} elseif ($typehintString === 'self' && $selfClass !== null) {
+			$hintType = new ObjectType($selfClass);
+		} else {
+			$lowercasedTypehintString = strtolower($typehintString);
+			switch ($lowercasedTypehintString) {
+				case 'int':
+				case 'integer':
+					$hintType = new IntegerType();
+					break;
+				case 'bool':
+				case 'boolean':
+					$hintType = new TrueOrFalseBooleanType();
+					break;
+				case 'true':
+					$hintType = new TrueBooleanType();
+					break;
+				case 'false':
+					$hintType = new FalseBooleanType();
+					break;
+				case 'string':
+					$hintType = new StringType();
+					break;
+				case 'float':
+					$hintType = new FloatType();
+					break;
+				case 'array':
+					$hintType = new ArrayType(new MixedType());
+					break;
+				case 'iterable':
+					$hintType = new IterableIterableType(new MixedType());
+					break;
+				case 'callable':
+					$hintType = new CallableType();
+					break;
+				case null:
+					$hintType = new MixedType();
+					break;
+				case 'resource':
+					$hintType = new ResourceType();
+					break;
+				case 'object':
+				case 'mixed':
+					$hintType = new MixedType();
+					break;
+				case 'null':
+					$hintType = new NullType();
+					break;
+				case 'void':
+					$hintType = new VoidType();
+					break;
+				default:
+					$className = $typehintString;
+					if ($nameScope !== null) {
+						$className = $nameScope->resolveStringName($className);
+					}
+					$hintType = new ObjectType($className);
+			}
 		}
 
-		if ($typehintString === 'static' && $selfClass !== null) {
-			return new StaticType($selfClass, $isNullable);
-		}
-
-		if ($typehintString === 'self' && $selfClass !== null) {
-			return new ObjectType($selfClass, $isNullable);
-		}
-
-		$lowercasedTypehintString = strtolower($typehintString);
-		switch ($lowercasedTypehintString) {
-			case 'int':
-			case 'integer':
-				return new IntegerType($isNullable);
-			case 'bool':
-			case 'boolean':
-				return new TrueOrFalseBooleanType($isNullable);
-			case 'true':
-				return new TrueBooleanType($isNullable);
-			case 'false':
-				return new FalseBooleanType($isNullable);
-			case 'string':
-				return new StringType($isNullable);
-			case 'float':
-				return new FloatType($isNullable);
-			case 'array':
-				return new ArrayType(new MixedType(true), $isNullable);
-			case 'iterable':
-				return new IterableIterableType(new MixedType(true), $isNullable);
-			case 'callable':
-				return new CallableType($isNullable);
-			case null:
-				return new MixedType(true);
-			case 'resource':
-				return new ResourceType($isNullable);
-			case 'object':
-			case 'mixed':
-				return new MixedType($isNullable);
-			case 'void':
-				return new VoidType();
-			default:
-				$className = $typehintString;
-				if ($nameScope !== null) {
-					$className = $nameScope->resolveStringName($className);
-				}
-				return new ObjectType($className, $isNullable);
-		}
+		return $isNullable
+			? $hintType->combineWith(new NullType())
+			: $hintType;
 	}
 
 	public static function decideTypeFromReflection(
@@ -80,7 +95,7 @@ class TypehintHelper
 	): Type
 	{
 		if ($reflectionType === null) {
-			return $phpDocType !== null ? $phpDocType : new MixedType(true);
+			return $phpDocType !== null ? $phpDocType : new MixedType();
 		}
 
 		$reflectionTypeString = (string) $reflectionType;
@@ -103,23 +118,26 @@ class TypehintHelper
 	): Type
 	{
 		if ($phpDocType !== null) {
-			if ($type instanceof IterableType && $phpDocType instanceof ArrayType) {
-				if ($type instanceof IterableIterableType) {
-					$phpDocType = new IterableIterableType(
-						$phpDocType->getItemType(),
-						$type->isNullable() || $phpDocType->isNullable()
-					);
-				} elseif ($type instanceof ArrayType) {
-					$type = new ArrayType(
-						$phpDocType->getItemType(),
-						$type->isNullable() || $phpDocType->isNullable()
-					);
-				}
-			} elseif ($phpDocType instanceof UnionType) {
-				if ($phpDocType->accepts($type)) {
-					return $phpDocType;
-				}
-			}
+//			if ($type instanceof IterableType && $phpDocType instanceof ArrayType) {
+//				if ($type instanceof IterableIterableType) {
+//					$phpDocType = new IterableIterableType($phpDocType->getItemType());
+//
+//					if ($type->accepts(new NullType()) || $phpDocType->accepts(new NullType())) {
+//						$phpDocType = $phpDocType->combineWith(new NullType());
+//					}
+//
+//				} elseif ($type instanceof ArrayType) {
+//					$type = new ArrayType($phpDocType->getItemType());
+//
+//					if ($type->accepts(new NullType()) || $phpDocType->accepts(new NullType())) {
+//						$type = $type->combineWith(new NullType());
+//					}
+//				}
+//			} elseif ($phpDocType instanceof UnionType) {
+//				if ($phpDocType->accepts($type)) {
+//					return $phpDocType;
+//				}
+//			}
 			if ($type->accepts($phpDocType)) {
 				return $phpDocType;
 			}

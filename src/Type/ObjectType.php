@@ -2,7 +2,7 @@
 
 namespace PHPStan\Type;
 
-class ObjectType implements Type
+class ObjectType implements ClassType
 {
 
 	use ClassTypeHelperTrait;
@@ -10,13 +10,9 @@ class ObjectType implements Type
 	/** @var string */
 	private $class;
 
-	/** @var bool */
-	private $nullable;
-
-	public function __construct(string $class, bool $nullable)
+	public function __construct(string $class)
 	{
 		$this->class = $class;
-		$this->nullable = $nullable;
 	}
 
 	public function getClass(): string
@@ -24,27 +20,20 @@ class ObjectType implements Type
 		return $this->class;
 	}
 
-	public function isNullable(): bool
-	{
-		return $this->nullable;
-	}
-
 	public function combineWith(Type $otherType): Type
 	{
+		if ($otherType instanceof UnionType) {
+			return $otherType->combineWith($this);
+		}
+
 		if ($otherType instanceof self && $this->getClass() == $otherType->getClass()) {
-			return new self($this->getClass(), $this->isNullable() || $otherType->isNullable());
+			return new self($this->getClass());
 		}
 
-		if ($otherType instanceof NullType) {
-			return $this->makeNullable();
-		}
-
-		return new MixedType($this->isNullable() || $otherType->isNullable());
-	}
-
-	public function makeNullable(): Type
-	{
-		return new self($this->getClass(), true);
+		return new UnionType([
+			$this,
+			$otherType,
+		]);
 	}
 
 	public function accepts(Type $type): bool
@@ -53,23 +42,15 @@ class ObjectType implements Type
 			return true;
 		}
 
-		if ($this->isNullable() && $type instanceof NullType) {
-			return true;
-		}
-
 		if ($type instanceof StaticType) {
 			return $this->checkSubclassAcceptability($type->getBaseClass());
 		}
 
-		if ($type instanceof UnionType && UnionTypeHelper::acceptsAll($this, $type)) {
-			return true;
+		if ($type instanceof ObjectType) {
+			return $this->checkSubclassAcceptability($type->getClass());
 		}
 
-		if ($type->getClass() === null) {
-			return false;
-		}
-
-		return $this->checkSubclassAcceptability($type->getClass());
+		return false;
 	}
 
 	private function checkSubclassAcceptability(string $thatClass): bool
@@ -99,7 +80,7 @@ class ObjectType implements Type
 
 	public function describe(): string
 	{
-		return $this->class . ($this->nullable ? '|null' : '');
+		return $this->class;
 	}
 
 	public function canAccessProperties(): bool

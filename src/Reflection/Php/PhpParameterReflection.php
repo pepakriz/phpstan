@@ -3,6 +3,7 @@
 namespace PHPStan\Reflection\Php;
 
 use PHPStan\Reflection\ParameterReflection;
+use PHPStan\Type\NullType;
 use PHPStan\Type\Type;
 use PHPStan\Type\TypehintHelper;
 
@@ -39,7 +40,7 @@ class PhpParameterReflection implements ParameterReflection
 		if ($this->type === null) {
 			$phpDocType = $this->phpDocType;
 			if ($phpDocType !== null && $this->reflection->isDefaultValueAvailable() && $this->reflection->getDefaultValue() === null) {
-				$phpDocType = $phpDocType->makeNullable();
+				$phpDocType = $phpDocType->combineWith(new NullType());
 			}
 			$this->type = TypehintHelper::decideTypeFromReflection(
 				$this->reflection->getType(),

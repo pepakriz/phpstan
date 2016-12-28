@@ -11,6 +11,7 @@ use PHPStan\Analyser\Scope;
 use PHPStan\Broker\Broker;
 use PHPStan\Reflection\ParametersAcceptor;
 use PHPStan\Type\IterableType;
+use PHPStan\Type\ObjectType;
 
 class FunctionDefinitionCheck
 {
@@ -113,7 +114,7 @@ class FunctionDefinitionCheck
 		foreach ($parametersAcceptor->getParameters() as $parameter) {
 			$type = $parameter->getType();
 			if (
-				$type->getClass() !== null
+				$type instanceof ObjectType
 				&& !$this->broker->hasClass($type->getClass())
 			) {
 				$errors[] = sprintf($parameterMessage, $parameter->getName(), $type->getClass());
@@ -122,7 +123,7 @@ class FunctionDefinitionCheck
 			) {
 				$nestedItemType = $type->getNestedItemType();
 				if (
-					$nestedItemType->getItemType()->getClass() !== null
+					$nestedItemType->getItemType() instanceof ObjectType
 					&& !$this->broker->hasClass($nestedItemType->getItemType()->getClass())
 				) {
 					$errors[] = sprintf($parameterMessage, $parameter->getName(), $type->describe());
@@ -132,7 +133,7 @@ class FunctionDefinitionCheck
 
 		$returnType = $parametersAcceptor->getReturnType();
 		if (
-			$returnType->getClass() !== null
+			$returnType instanceof ObjectType
 			&& !$this->broker->hasClass($returnType->getClass())
 		) {
 			$errors[] = sprintf($returnMessage, $returnType->getClass());
@@ -141,7 +142,7 @@ class FunctionDefinitionCheck
 		) {
 			$nestedItemType = $returnType->getNestedItemType();
 			if (
-				$nestedItemType->getItemType()->getClass() !== null
+				$nestedItemType->getItemType() instanceof ObjectType
 				&& !$this->broker->hasClass($nestedItemType->getItemType()->getClass())
 			) {
 				$errors[] = sprintf($returnMessage, $returnType->describe());

@@ -107,7 +107,7 @@ class CallMethodsRuleTest extends \PHPStan\Rules\AbstractRuleTest
 				86,
 			],
 			[
-				'Call to an undefined method ArrayObject::doFoo().',
+				'Cannot call method doFoo() on stdClass[]|ArrayObject.',
 				104,
 			],
 		]);

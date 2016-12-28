@@ -8,21 +8,9 @@ class StaticType implements StaticResolvableType
 	/** @var string */
 	private $baseClass;
 
-	/** @var bool */
-	private $nullable;
-
-	public function __construct(string $baseClass, bool $nullable)
+	public function __construct(string $baseClass)
 	{
 		$this->baseClass = $baseClass;
-		$this->nullable = $nullable;
-	}
-
-	/**
-	 * @return string|null
-	 */
-	public function getClass()
-	{
-		return null;
 	}
 
 	public function getBaseClass(): string
@@ -30,29 +18,34 @@ class StaticType implements StaticResolvableType
 		return $this->baseClass;
 	}
 
-	public function isNullable(): bool
-	{
-		return $this->nullable;
-	}
-
 	public function combineWith(Type $otherType): Type
 	{
-		return new self($this->baseClass, $this->isNullable() || $otherType->isNullable());
-	}
+		if ($otherType instanceof UnionType) {
+			return $otherType->combineWith($this);
+		}
 
-	public function makeNullable(): Type
-	{
-		return new self($this->baseClass, true);
+		if ($otherType instanceof self && $this->accepts($otherType)) {
+			return $otherType;
+		}
+
+		if ($otherType instanceof ObjectType && $this->accepts($otherType)) {
+			return $otherType;
+		}
+
+		return new UnionType([
+			$this,
+			$otherType,
+		]);
 	}
 
 	public function accepts(Type $type): bool
 	{
-		return (new ObjectType($this->baseClass, $this->isNullable()))->accepts($type);
+		return (new ObjectType($this->baseClass))->accepts($type);
 	}
 
 	public function describe(): string
 	{
-		return sprintf('static(%s)', $this->baseClass) . ($this->nullable ? '|null' : '');
+		return sprintf('static(%s)', $this->baseClass);
 	}
 
 	public function canAccessProperties(): bool
@@ -72,12 +65,12 @@ class StaticType implements StaticResolvableType
 
 	public function resolveStatic(string $className): Type
 	{
-		return new ObjectType($className, $this->isNullable());
+		return new ObjectType($className);
 	}
 
 	public function changeBaseClass(string $className): StaticResolvableType
 	{
-		return new self($className, $this->isNullable());
+		return new self($className);
 	}
 
 }

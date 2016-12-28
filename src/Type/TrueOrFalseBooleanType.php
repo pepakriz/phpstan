@@ -5,76 +5,38 @@ namespace PHPStan\Type;
 class TrueOrFalseBooleanType implements BooleanType
 {
 
-	/** @var bool */
-	private $nullable;
-
-	public function __construct(bool $nullable)
-	{
-		$this->nullable = $nullable;
-	}
-
 	public function describe(): string
 	{
-		return 'bool' . ($this->nullable ? '|null' : '');
-	}
-
-	public function canAccessProperties(): bool
-	{
-		return false;
-	}
-
-	public function canCallMethods(): bool
-	{
-		return false;
-	}
-
-	/**
-	 * @return string|null
-	 */
-	public function getClass()
-	{
-		return null;
-	}
-
-	public function isNullable(): bool
-	{
-		return $this->nullable;
+		return 'bool';
 	}
 
 	public function combineWith(Type $otherType): Type
 	{
+		if ($otherType instanceof UnionType) {
+			return $otherType->combineWith($this);
+		}
+
 		if ($otherType instanceof BooleanType) {
-			return new self($this->isNullable() || $otherType->isNullable());
+			return $this;
 		}
 
-		if ($otherType instanceof NullType) {
-			return $this->makeNullable();
-		}
-
-		return new MixedType($this->isNullable() || $otherType->isNullable());
-	}
-
-	public function makeNullable(): Type
-	{
-		return new self(true);
+		return new UnionType([
+			$this,
+			$otherType,
+		]);
 	}
 
 	public function accepts(Type $type): bool
 	{
+		if ($type instanceof UnionType) {
+			return $type->accepts($this);
+		}
+
 		if ($type instanceof BooleanType) {
 			return true;
 		}
 
-		if ($this->isNullable() && $type instanceof NullType) {
-			return true;
-		}
-
 		return $type instanceof MixedType;
-	}
-
-	public function isDocumentableNatively(): bool
-	{
-		return true;
 	}
 
 }

@@ -44,26 +44,43 @@ class ReturnTypeRule implements \PHPStan\Rules\Rule
 			return [];
 		}
 
-		return $this->returnTypeCheck->checkReturnType(
-			$scope,
-			$method->getReturnType(),
-			$node->expr,
-			sprintf(
-				'Method %s::%s() should return %%s but empty return statement found.',
-				$method->getDeclaringClass()->getName(),
-				$method->getName()
-			),
-			sprintf(
-				'Method %s::%s() with return type void returns %%s but should not return anything.',
-				$method->getDeclaringClass()->getName(),
-				$method->getName()
-			),
-			sprintf(
-				'Method %s::%s() should return %%s but returns %%s.',
-				$method->getDeclaringClass()->getName(),
-				$method->getName()
-			)
-		);
+		try {
+			$this->returnTypeCheck->checkReturnType(
+				$scope,
+				$method->getReturnType(),
+				$node->expr
+			);
+		} catch (\PHPStan\Rules\EmptyReturnStatementException $e) {
+			return [
+				sprintf(
+					'Method %s::%s() should return %s but empty return statement found.',
+					$method->getDeclaringClass()->getName(),
+					$method->getName(),
+					$e->getType()->describe()
+				),
+			];
+		} catch (\PHPStan\Rules\VoidReturnStatementException $e) {
+			return [
+				sprintf(
+					'Method %s::%s() with return type void returns %s but should not return anything.',
+					$method->getDeclaringClass()->getName(),
+					$method->getName(),
+					$e->getReturnType()->describe()
+				),
+			];
+		} catch (\PHPStan\Rules\TypeMismatchReturnStatementException $e) {
+			return [
+				sprintf(
+					'Method %s::%s() should return %s but returns %s.',
+					$method->getDeclaringClass()->getName(),
+					$method->getName(),
+					$e->getType()->describe(),
+					$e->getReturnType()->describe()
+				),
+			];
+		}
+
+		return [];
 	}
 
 }

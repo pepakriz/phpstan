@@ -7,6 +7,7 @@ use PhpParser\Node\Expr\Clone_;
 use PhpParser\Node\Expr\Variable;
 use PHPStan\Analyser\Scope;
 use PHPStan\Type\MixedType;
+use PHPStan\Type\ObjectType;
 
 class VariableCloningRule implements \PHPStan\Rules\Rule
 {
@@ -29,7 +30,7 @@ class VariableCloningRule implements \PHPStan\Rules\Rule
 			return [];
 		}
 
-		if ($type->getClass() !== null) {
+		if ($type instanceof ObjectType) {
 			return [];
 		}
 

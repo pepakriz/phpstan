@@ -34,15 +34,31 @@ class ClosureReturnTypeRule implements \PHPStan\Rules\Rule
 			return [];
 		}
 
-		return $this->returnTypeCheck->checkReturnType(
-			$scope,
-			$scope->getAnonymousFunctionReturnType(),
-			$node->expr,
-			'Anonymous function should return %s but empty return statement found.',
-			'Anonymous function with return type void returns %s but should not return anything.',
-			'Anonymous function should return %s but returns %s.',
-			true
-		);
+		try {
+			$this->returnTypeCheck->checkReturnType(
+				$scope,
+				$scope->getAnonymousFunctionReturnType(),
+				$node->expr
+			);
+		} catch (\PHPStan\Rules\EmptyReturnStatementException $e) {
+			return [
+				sprintf('Anonymous function should return %s but empty return statement found.', $e->getType()->describe()),
+			];
+		} catch (\PHPStan\Rules\VoidReturnStatementException $e) {
+			return [
+				sprintf('Anonymous function with return type void returns %s but should not return anything.', $e->getReturnType()->describe()),
+			];
+		} catch (\PHPStan\Rules\TypeMismatchReturnStatementException $e) {
+			return [
+				sprintf(
+					'Anonymous function should return %s but returns %s.',
+					$e->getType()->describe(),
+					$e->getReturnType()->describe()
+				),
+			];
+		}
+
+		return [];
 	}
 
 }

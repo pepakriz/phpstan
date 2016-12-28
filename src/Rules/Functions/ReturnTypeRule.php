@@ -48,23 +48,40 @@ class ReturnTypeRule implements \PHPStan\Rules\Rule
 			return [];
 		}
 
-		return $this->returnTypeCheck->checkReturnType(
-			$scope,
-			$function->getReturnType(),
-			$node->expr,
-			sprintf(
-				'Function %s() should return %%s but empty return statement found.',
-				$function->getName()
-			),
-			sprintf(
-				'Function %s() with return type void returns %%s but should not return anything.',
-				$function->getName()
-			),
-			sprintf(
-				'Function %s() should return %%s but returns %%s.',
-				$function->getName()
-			)
-		);
+		try {
+			$this->returnTypeCheck->checkReturnType(
+				$scope,
+				$function->getReturnType(),
+				$node->expr
+			);
+		} catch (\PHPStan\Rules\EmptyReturnStatementException $e) {
+			return [
+				sprintf(
+					'Function %s() should return %s but empty return statement found.',
+					$function->getName(),
+					$e->getType()->describe()
+				),
+			];
+		} catch (\PHPStan\Rules\VoidReturnStatementException $e) {
+			return [
+				sprintf(
+					'Function %s() with return type void returns %s but should not return anything.',
+					$function->getName(),
+					$e->getReturnType()->describe()
+				),
+			];
+		} catch (\PHPStan\Rules\TypeMismatchReturnStatementException $e) {
+			return [
+				sprintf(
+					'Function %s() should return %s but returns %s.',
+					$function->getName(),
+					$e->getType()->describe(),
+					$e->getReturnType()->describe()
+				),
+			];
+		}
+
+		return [];
 	}
 
 }

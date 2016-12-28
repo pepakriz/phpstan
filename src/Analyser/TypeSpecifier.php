@@ -56,7 +56,7 @@ class TypeSpecifier
 			}
 
 			$printedExpr = $this->printer->prettyPrintExpr($expr->expr);
-			$objectType = new ObjectType($class, false);
+			$objectType = new ObjectType($class);
 			if ($negated) {
 				if ($source === self::SOURCE_FROM_AND) {
 					return $types;
@@ -78,27 +78,27 @@ class TypeSpecifier
 				'is_integer',
 				'is_long',
 			], true)) {
-				$specifiedType = new IntegerType(false);
+				$specifiedType = new IntegerType();
 			} elseif (in_array($functionName, [
 				'is_float',
 				'is_double',
 				'is_real',
 			], true)) {
-				$specifiedType = new FloatType(false);
+				$specifiedType = new FloatType();
 			} elseif ($functionName === 'is_null') {
 				$specifiedType = new NullType();
 			} elseif ($functionName === 'is_array') {
-				$specifiedType = new ArrayType(new MixedType(true), false);
+				$specifiedType = new ArrayType(new MixedType());
 			} elseif ($functionName === 'is_bool') {
-				$specifiedType = new TrueOrFalseBooleanType(false);
+				$specifiedType = new TrueOrFalseBooleanType();
 			} elseif ($functionName === 'is_callable') {
-				$specifiedType = new CallableType(false);
+				$specifiedType = new CallableType();
 			} elseif ($functionName === 'is_resource') {
-				$specifiedType = new ResourceType(false);
+				$specifiedType = new ResourceType();
 			} elseif ($functionName === 'is_iterable') {
-				$specifiedType = new IterableIterableType(new MixedType(true), false);
+				$specifiedType = new IterableIterableType(new MixedType());
 			} elseif ($functionName === 'is_string') {
-				$specifiedType = new StringType(false);
+				$specifiedType = new StringType();
 			}
 
 			if ($specifiedType !== null) {

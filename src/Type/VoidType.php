@@ -5,31 +5,20 @@ namespace PHPStan\Type;
 class VoidType implements Type
 {
 
-	/**
-	 * @return string|null
-	 */
-	public function getClass()
-	{
-		return null;
-	}
-
-	public function isNullable(): bool
-	{
-		return false;
-	}
-
 	public function combineWith(Type $otherType): Type
 	{
 		if ($otherType instanceof self) {
-			return $this;
+			return new self();
 		}
 
-		return new MixedType(true);
-	}
+		if ($otherType instanceof UnionType) {
+			return $otherType->combineWith($this);
+		}
 
-	public function makeNullable(): Type
-	{
-		return $this;
+		return new UnionType([
+			new $this,
+			clone $otherType,
+		]);
 	}
 
 	public function accepts(Type $type): bool
@@ -40,21 +29,6 @@ class VoidType implements Type
 	public function describe(): string
 	{
 		return 'void';
-	}
-
-	public function canAccessProperties(): bool
-	{
-		return false;
-	}
-
-	public function canCallMethods(): bool
-	{
-		return false;
-	}
-
-	public function isDocumentableNatively(): bool
-	{
-		return true;
 	}
 
 }

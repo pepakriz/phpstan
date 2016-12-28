@@ -5,27 +5,24 @@ namespace PHPStan\Type;
 class NullType implements Type
 {
 
-	/**
-	 * @return string|null
-	 */
-	public function getClass()
-	{
-		return null;
-	}
-
-	public function isNullable(): bool
-	{
-		return true;
-	}
-
 	public function combineWith(Type $otherType): Type
 	{
-		return $otherType->makeNullable();
-	}
+		if ($otherType instanceof UnionType) {
+			return $otherType->combineWith($this);
+		}
 
-	public function makeNullable(): Type
-	{
-		return $this;
+		if ($otherType instanceof MixedType) {
+			return $otherType;
+		}
+
+		if ($otherType instanceof self) {
+			return $this;
+		}
+
+		return new UnionType([
+			$this,
+			$otherType,
+		]);
 	}
 
 	public function accepts(Type $type): bool
@@ -36,21 +33,6 @@ class NullType implements Type
 	public function describe(): string
 	{
 		return 'null';
-	}
-
-	public function canAccessProperties(): bool
-	{
-		return false;
-	}
-
-	public function canCallMethods(): bool
-	{
-		return false;
-	}
-
-	public function isDocumentableNatively(): bool
-	{
-		return true;
 	}
 
 }
