@@ -88,6 +88,11 @@ class StringType implements Type
 		return new StringType();
 	}
 
+	public function getOffsetKeyType(): Type
+	{
+		return new IntegerType();
+	}
+
 	public function isCallable(): TrinaryLogic
 	{
 		return TrinaryLogic::createMaybe();

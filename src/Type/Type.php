@@ -52,6 +52,8 @@ interface Type
 
 	public function getOffsetValueType(): Type;
 
+	public function getOffsetKeyType(): Type;
+
 	public function isCallable(): TrinaryLogic;
 
 	public function isClonable(): bool;

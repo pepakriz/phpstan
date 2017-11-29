@@ -217,6 +217,29 @@ class StaticType implements StaticResolvableType, TypeWithClassName
 		return new ErrorType();
 	}
 
+	public function getOffsetKeyType(): Type
+	{
+		$broker = Broker::getInstance();
+
+		if (!$broker->hasClass($this->baseClass)) {
+			return new ErrorType();
+		}
+
+		$classReflection = $broker->getClass($this->baseClass);
+
+		if ($classReflection->isSubclassOf(\ArrayAccess::class) && $classReflection->hasNativeMethod('offsetSet')) {
+			if ($classReflection->hasNativeMethod('offsetSet')) {
+				return RecursionGuard::run($this, function () use ($classReflection) {
+					return $classReflection->getNativeMethod('offsetSet')->getParameters()[0]->getType();
+				});
+			}
+
+			return new MixedType();
+		}
+
+		return new ErrorType();
+	}
+
 	public function isCallable(): TrinaryLogic
 	{
 		$broker = Broker::getInstance();

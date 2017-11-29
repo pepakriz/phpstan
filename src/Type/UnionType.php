@@ -274,6 +274,13 @@ class UnionType implements CompoundType, StaticResolvableType
 		});
 	}
 
+	public function getOffsetKeyType(): Type
+	{
+		return $this->unionTypes(function (Type $type): Type {
+			return $type->getOffsetKeyType();
+		});
+	}
+
 	public function isCallable(): TrinaryLogic
 	{
 		return $this->unionResults(function (Type $type): TrinaryLogic {

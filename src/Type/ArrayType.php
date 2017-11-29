@@ -156,6 +156,11 @@ class ArrayType implements StaticResolvableType
 		return $this->getItemType();
 	}
 
+	public function getOffsetKeyType(): Type
+	{
+		return $this->getIterableKeyType();
+	}
+
 	public function isCallable(): TrinaryLogic
 	{
 		return $this->callable;

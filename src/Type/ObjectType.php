@@ -290,6 +290,29 @@ class ObjectType implements TypeWithClassName
 		return new ErrorType();
 	}
 
+	public function getOffsetKeyType(): Type
+	{
+		$broker = Broker::getInstance();
+
+		if (!$broker->hasClass($this->className)) {
+			return new ErrorType();
+		}
+
+		$classReflection = $broker->getClass($this->className);
+
+		if ($classReflection->isSubclassOf(\ArrayAccess::class) && $classReflection->hasNativeMethod('offsetSet')) {
+			if ($classReflection->hasNativeMethod('offsetSet')) {
+				return RecursionGuard::run($this, function () use ($classReflection) {
+					return $classReflection->getNativeMethod('offsetSet')->getParameters()[0]->getType();
+				});
+			}
+
+			return new MixedType();
+		}
+
+		return new ErrorType();
+	}
+
 	public function isCallable(): TrinaryLogic
 	{
 		$broker = Broker::getInstance();

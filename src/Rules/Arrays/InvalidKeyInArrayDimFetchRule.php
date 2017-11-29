@@ -25,14 +25,23 @@ class InvalidKeyInArrayDimFetchRule implements \PHPStan\Rules\Rule
 		}
 
 		$varType = $scope->getType($node->var);
-		if (!$varType instanceof ArrayType) {
-			return [];
-		}
-
 		$dimensionType = $scope->getType($node->dim);
-		if (!AllowedArrayKeysTypes::getType()->accepts($dimensionType)) {
+
+		if ($varType instanceof ArrayType && !AllowedArrayKeysTypes::getType()->accepts($dimensionType)) {
 			return [
 				sprintf('Invalid array key type %s.', $dimensionType->describe()),
+			];
+		}
+
+		if ($varType->isOffsetAccesible()->no()) {
+			return [
+				sprintf('Invalid array access on type %s.', $varType->describe()),
+			];
+		}
+
+		if (!$varType->getOffsetKeyType()->accepts($dimensionType)) {
+			return [
+				sprintf('Invalid array access key type %s.', $dimensionType->describe()),
 			];
 		}
 

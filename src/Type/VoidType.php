@@ -117,6 +117,11 @@ class VoidType implements Type
 		return new ErrorType();
 	}
 
+	public function getOffsetKeyType(): Type
+	{
+		return new ErrorType();
+	}
+
 	public function isCallable(): TrinaryLogic
 	{
 		return TrinaryLogic::createNo();

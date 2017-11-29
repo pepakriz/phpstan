@@ -217,6 +217,13 @@ class IntersectionType implements CompoundType, StaticResolvableType
 		});
 	}
 
+	public function getOffsetKeyType(): Type
+	{
+		return $this->intersectTypes(function (Type $type): Type {
+			return $type->getOffsetKeyType();
+		});
+	}
+
 	public function isCallable(): TrinaryLogic
 	{
 		return $this->intersectResults(function (Type $type): TrinaryLogic {

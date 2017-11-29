@@ -71,4 +71,9 @@ trait JustNullableTypeTrait
 		return new ErrorType();
 	}
 
+	public function getOffsetKeyType(): Type
+	{
+		return new ErrorType();
+	}
+
 }

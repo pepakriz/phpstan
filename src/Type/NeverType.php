@@ -118,6 +118,11 @@ class NeverType implements CompoundType
 		return new NeverType();
 	}
 
+	public function getOffsetKeyType(): Type
+	{
+		return new NeverType();
+	}
+
 	public function isCallable(): TrinaryLogic
 	{
 		return TrinaryLogic::createYes();

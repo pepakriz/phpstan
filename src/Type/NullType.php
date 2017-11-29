@@ -6,6 +6,7 @@ use PHPStan\Analyser\Scope;
 use PHPStan\Reflection\ClassConstantReflection;
 use PHPStan\Reflection\MethodReflection;
 use PHPStan\Reflection\PropertyReflection;
+use PHPStan\Rules\Arrays\AllowedArrayKeysTypes;
 use PHPStan\TrinaryLogic;
 
 class NullType implements Type
@@ -123,6 +124,11 @@ class NullType implements Type
 	public function getOffsetValueType(): Type
 	{
 		return new NullType();
+	}
+
+	public function getOffsetKeyType(): Type
+	{
+		return AllowedArrayKeysTypes::getType();
 	}
 
 	public function isCallable(): TrinaryLogic

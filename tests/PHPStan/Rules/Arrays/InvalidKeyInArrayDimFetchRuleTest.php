@@ -12,14 +12,35 @@ class InvalidKeyInArrayDimFetchRuleTest extends \PHPStan\Testing\RuleTestCase
 
 	public function testInvalidKey()
 	{
+		require_once __DIR__ . '/data/invalid-key-array-dim-fetch.php';
 		$this->analyse([__DIR__ . '/data/invalid-key-array-dim-fetch.php'], [
 			[
 				'Invalid array key type DateTimeImmutable.',
-				7,
+				22,
 			],
 			[
 				'Invalid array key type array.',
-				8,
+				23,
+			],
+			[
+				'Invalid array access key type string.',
+				36,
+			],
+			[
+				'Invalid array access key type string.',
+				43,
+			],
+			[
+				'Invalid array access key type string.',
+				47,
+			],
+			[
+				'Invalid array access on type int.',
+				50,
+			],
+			[
+				'Invalid array access on type DateTimeImmutable.',
+				53,
 			],
 		]);
 	}
