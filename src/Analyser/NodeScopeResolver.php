@@ -359,11 +359,15 @@ class NodeScopeResolver
 
 	private function processNode(\PhpParser\Node $node, Scope $scope, \Closure $nodeCallback, bool $stopImmediately = false): void
 	{
-		$nodeCallback($node, $scope);
-		if ($stopImmediately) {
-			return;
+		if (!$stopImmediately) {
+			$this->doProcessNode($node, $scope, $nodeCallback);
 		}
 
+		$nodeCallback($node, $scope);
+	}
+
+	private function doProcessNode(\PhpParser\Node $node, Scope $scope, \Closure $nodeCallback): void
+	{
 		if (
 			$node instanceof \PhpParser\Node\Stmt\ClassLike
 		) {

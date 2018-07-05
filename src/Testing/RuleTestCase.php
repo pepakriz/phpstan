@@ -103,17 +103,44 @@ abstract class RuleTestCase extends \PHPStan\Testing\TestCase
 		};
 
 		$expectedErrors = array_map(
-			function (array $error) use ($strictlyTypedSprintf): string {
+			function (array $error): array {
 				if (!isset($error[0])) {
 					throw new \InvalidArgumentException('Missing expected error message.');
 				}
 				if (!isset($error[1])) {
 					throw new \InvalidArgumentException('Missing expected file line.');
 				}
+				return $error;
+			},
+			$expectedErrors
+		);
+
+		usort($expectedErrors, function (array $error1, array $error2): int {
+			$order = $error1[1] <=> $error2[1];
+
+			if ($order === 0) {
+				return $error1[0] <=> $error2[0];
+			}
+
+			return $order;
+		});
+
+		$expectedErrors = array_map(
+			function (array $error) use ($strictlyTypedSprintf): string {
 				return $strictlyTypedSprintf($error[1], $error[0]);
 			},
 			$expectedErrors
 		);
+
+		usort($actualErrors, function (Error $error1, Error $error2): int {
+			$order = $error1->getLine() <=> $error2->getLine();
+
+			if ($order === 0) {
+				return $error1->getMessage() <=> $error2->getMessage();
+			}
+
+			return $order;
+		});
 
 		$actualErrors = array_map(
 			function (Error $error): string {

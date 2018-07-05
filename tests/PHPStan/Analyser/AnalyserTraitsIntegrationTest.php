@@ -90,8 +90,8 @@ class AnalyserTraitsIntegrationTest extends \PHPStan\Testing\TestCase
 		$errors = $this->runAnalyse([__DIR__ . '/traits/trait-error.php']);
 		$this->assertCount(3, $errors);
 		$this->assertSame('Undefined variable: $undefined', $errors[0]->getMessage());
-		$this->assertSame('Call to an undefined method TraitErrors\MyClass::undefined().', $errors[1]->getMessage());
-		$this->assertSame('Undefined variable: $undefined', $errors[2]->getMessage());
+		$this->assertSame('Undefined variable: $undefined', $errors[1]->getMessage());
+		$this->assertSame('Call to an undefined method TraitErrors\MyClass::undefined().', $errors[2]->getMessage());
 	}
 
 	public function testTraitInAnonymousClass(): void
