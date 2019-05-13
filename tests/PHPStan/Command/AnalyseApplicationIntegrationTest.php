@@ -57,6 +57,7 @@ class AnalyseApplicationIntegrationTest extends \PHPStan\Testing\TestCase
 			$style,
 			new TableErrorFormatter($relativePathHelper, false, false, false),
 			false,
+			null,
 			false,
 			null
 		);

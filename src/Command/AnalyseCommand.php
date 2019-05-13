@@ -2,6 +2,8 @@
 
 namespace PHPStan\Command;
 
+use Nette\Utils\Json;
+use PHPStan\Analyser\ResultCache\ResultCacheFactory;
 use PHPStan\Command\ErrorFormatter\ErrorFormatter;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -31,6 +33,9 @@ class AnalyseCommand extends \Symfony\Component\Console\Command\Command
 				new InputOption('autoload-file', 'a', InputOption::VALUE_REQUIRED, 'Project\'s additional autoload file path'),
 				new InputOption('error-format', null, InputOption::VALUE_REQUIRED, 'Format in which to print the result of the analysis', 'table'),
 				new InputOption('memory-limit', null, InputOption::VALUE_REQUIRED, 'Memory limit for analysis'),
+				new InputOption('use-result-cache', null, InputOption::VALUE_NONE, 'Use result cache'),
+				new InputOption('result-cache-strategy', null, InputOption::VALUE_REQUIRED, 'Result cache strategy'),
+				new InputOption('result-cache-key', null, InputOption::VALUE_REQUIRED, 'Result cache key'),
 			]);
 	}
 
@@ -58,6 +63,9 @@ class AnalyseCommand extends \Symfony\Component\Console\Command\Command
 		$configuration = $input->getOption('configuration');
 		$level = $input->getOption(self::OPTION_LEVEL);
 		$pathsFile = $input->getOption('paths-file');
+		$useResultCache = $input->getOption('use-result-cache');
+		$resultCacheStrategy = $input->getOption('result-cache-strategy');
+		$resultCacheKey = $input->getOption('result-cache-key');
 
 		if (
 			!is_array($paths)
@@ -66,6 +74,9 @@ class AnalyseCommand extends \Symfony\Component\Console\Command\Command
 			|| (!is_string($configuration) && $configuration !== null)
 			|| (!is_string($level) && $level !== null)
 			|| (!is_string($pathsFile) && $pathsFile !== null)
+			|| (!is_bool($useResultCache))
+			|| (!is_string($resultCacheStrategy) && $resultCacheStrategy !== null)
+			|| (!is_string($resultCacheKey) && $resultCacheKey !== null)
 		) {
 			throw new \PHPStan\ShouldNotHappenException();
 		}
@@ -116,6 +127,41 @@ class AnalyseCommand extends \Symfony\Component\Console\Command\Command
 			throw new \PHPStan\ShouldNotHappenException();
 		}
 
+		/** @var \PHPStan\Analyser\ResultCache\ResultCache|null $analyserResultCache */
+		$analyserResultCache = null;
+
+		if ($useResultCache) {
+			if ($resultCacheStrategy === null) {
+				$resultCacheStrategy = getenv('CI') !== false ? 'md5' : 'mtime';
+			}
+
+			if ($resultCacheKey === null) {
+				$resultCacheKey = sha1(Json::encode([
+					$paths,
+					$autoloadFile,
+					$configuration,
+					$level,
+					$pathsFile,
+				]));
+			}
+
+			$resultCacheStrategyServiceName = sprintf('resultCacheStrategy.%s', $resultCacheStrategy);
+			if (!$container->hasService($resultCacheStrategyServiceName)) {
+				$errorOutput->writeln(sprintf(
+					'Unsupported result cache strategy %s.',
+					$resultCacheStrategy
+				));
+				return 1;
+			}
+
+			/** @var \PHPStan\Analyser\ResultCache\Strategy\ResultCacheStrategy $resultCacheStrategy */
+			$resultCacheStrategy = $container->getService($resultCacheStrategyServiceName);
+
+			/** @var ResultCacheFactory $analyserResultCacheFactory */
+			$analyserResultCacheFactory = $container->getByType(ResultCacheFactory::class);
+			$analyserResultCache = $analyserResultCacheFactory->create($resultCacheStrategy, $resultCacheKey);
+		}
+
 		return $inceptionResult->handleReturn(
 			$application->analyse(
 				$inceptionResult->getFiles(),
@@ -123,6 +169,7 @@ class AnalyseCommand extends \Symfony\Component\Console\Command\Command
 				$inceptionResult->getConsoleStyle(),
 				$errorFormatter,
 				$inceptionResult->isDefaultLevelUsed(),
+				$analyserResultCache,
 				$debug,
 				$inceptionResult->getProjectConfigFile()
 			)

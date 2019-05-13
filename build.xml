@@ -233,6 +233,7 @@
 			<arg value="analyse"/>
 			<arg value="-c"/>
 			<arg path="${phpstan.config}"/>
+			<arg value="--use-result-cache"/>
 			<arg value="-l"/>
 			<arg value="7"/>
 			<arg path="build/PHPStan"/>

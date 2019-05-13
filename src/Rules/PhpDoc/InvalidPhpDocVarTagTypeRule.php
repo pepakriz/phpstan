@@ -12,7 +12,6 @@ use PHPStan\Rules\RuleErrorBuilder;
 use PHPStan\Type\ErrorType;
 use PHPStan\Type\FileTypeMapper;
 use PHPStan\Type\NeverType;
-use function sprintf;
 
 class InvalidPhpDocVarTagTypeRule implements Rule
 {

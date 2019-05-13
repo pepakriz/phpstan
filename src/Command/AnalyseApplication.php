@@ -4,6 +4,7 @@ namespace PHPStan\Command;
 
 use PhpParser\Node;
 use PHPStan\Analyser\Analyser;
+use PHPStan\Analyser\ResultCache\ResultCache;
 use PHPStan\Analyser\Scope;
 use PHPStan\Command\ErrorFormatter\ErrorFormatter;
 use PHPStan\Type\MixedType;
@@ -33,6 +34,7 @@ class AnalyseApplication
 	 * @param \Symfony\Component\Console\Style\OutputStyle $style
 	 * @param \PHPStan\Command\ErrorFormatter\ErrorFormatter $errorFormatter
 	 * @param bool $defaultLevelUsed
+	 * @param \PHPStan\Analyser\ResultCache\ResultCache|null $analyserResultCache
 	 * @param bool $debug
 	 * @param string|null $projectConfigFile
 	 * @return int Error code.
@@ -43,6 +45,7 @@ class AnalyseApplication
 		OutputStyle $style,
 		ErrorFormatter $errorFormatter,
 		bool $defaultLevelUsed,
+		?ResultCache $analyserResultCache,
 		bool $debug,
 		?string $projectConfigFile
 	): int
@@ -78,6 +81,7 @@ class AnalyseApplication
 			$onlyFiles,
 			$preFileCallback,
 			$postFileCallback,
+			$analyserResultCache,
 			$debug,
 			static function (Node $node, Scope $scope) use (&$hasInferrablePropertyTypesFromConstructor): void {
 				if ($hasInferrablePropertyTypesFromConstructor) {

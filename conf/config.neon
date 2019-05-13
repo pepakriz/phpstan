@@ -44,6 +44,7 @@ parameters:
 		- stdClass
 	earlyTerminatingMethodCalls: []
 	memoryLimitFile: %tmpDir%/.memory_limit
+	resultCacheFile: %tmpDir%/cache/phpstan_result_cache
 	benchmarkFile: null
 	dynamicConstantNames:
 		- ICONV_IMPL
@@ -146,6 +147,7 @@ parametersSchema:
 	universalObjectCratesClasses: listOf(string())
 	earlyTerminatingMethodCalls: arrayOf(listOf(string()))
 	memoryLimitFile: string()
+	resultCacheFile: string()
 	benchmarkFile: schema(string(), nullable())
 	dynamicConstantNames: listOf(string())
 	customRulesetUsed: bool()
@@ -235,6 +237,11 @@ services:
 			earlyTerminatingMethodCalls: %earlyTerminatingMethodCalls%
 
 	-
+		class: PHPStan\Analyser\ResultCache\ResultCacheFactory
+		arguments:
+			cacheFile: %resultCacheFile%
+
+	-
 		class: PHPStan\Cache\Cache
 		arguments:
 			storage: @cacheStorage
@@ -249,6 +256,11 @@ services:
 
 	-
 		class: PHPStan\Dependency\DependencyResolver
+
+	-
+		class: PHPStan\Dependency\DependencyResolverRule
+		tags:
+			- phpstan.rules.rule
 
 	-
 		class: PHPStan\DependencyInjection\Container
@@ -752,3 +764,9 @@ services:
 		class: PHPStan\Command\ErrorFormatter\JsonErrorFormatter
 		arguments:
 			pretty: true
+
+	resultCacheStrategy.md5:
+		class: PHPStan\Analyser\ResultCache\Strategy\Md5CacheStrategy
+
+	resultCacheStrategy.mtime:
+		class: PHPStan\Analyser\ResultCache\Strategy\MtimeCacheStrategy

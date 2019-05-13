@@ -3,6 +3,8 @@
 namespace PHPStan\Analyser;
 
 use Nette\Utils\Json;
+use PHPStan\Analyser\ResultCache\ResultCache;
+use PHPStan\Dependency\DependencyResolverRule;
 use PHPStan\File\FileHelper;
 use PHPStan\Node\FileNode;
 use PHPStan\Parser\Parser;
@@ -82,6 +84,7 @@ class Analyser
 	 * @param bool $onlyFiles
 	 * @param \Closure(string $file): void|null $preFileCallback
 	 * @param \Closure(string $file): void|null $postFileCallback
+	 * @param ResultCache|null $analyserResultCache
 	 * @param bool $debug
 	 * @param \Closure(\PhpParser\Node $node, Scope $scope): void|null $outerNodeCallback
 	 * @return string[]|\PHPStan\Analyser\Error[] errors
@@ -91,6 +94,7 @@ class Analyser
 		bool $onlyFiles,
 		?\Closure $preFileCallback = null,
 		?\Closure $postFileCallback = null,
+		?ResultCache $analyserResultCache = null,
 		bool $debug = false,
 		?\Closure $outerNodeCallback = null
 	): array
@@ -129,10 +133,18 @@ class Analyser
 			return $errors;
 		}
 
+		if ($analyserResultCache !== null) {
+			$analyserResultCacheRequirements = $analyserResultCache->getRequirements($files);
+			$errors = $analyserResultCacheRequirements->getErrors();
+			$filesToAnalyse = $analyserResultCacheRequirements->getFiles();
+		} else {
+			$filesToAnalyse = $files;
+		}
+
 		$this->nodeScopeResolver->setAnalysedFiles($files);
 		$internalErrorsCount = 0;
 		$reachedInternalErrorsCountLimit = false;
-		foreach ($files as $file) {
+		foreach ($filesToAnalyse as $file) {
 			try {
 				$fileErrors = [];
 				if ($preFileCallback !== null) {
@@ -143,13 +155,17 @@ class Analyser
 					$parserBenchmarkTime = $this->benchmarkStart();
 					$parserNodes = $this->parser->parseFile($file);
 					$this->benchmarkEnd($parserBenchmarkTime, 'parser');
-					$nodeCallback = function (\PhpParser\Node $node, Scope $scope) use (&$fileErrors, $file, &$scopeBenchmarkTime, $outerNodeCallback): void {
+					$nodeCallback = function (\PhpParser\Node $node, Scope $scope) use (&$fileErrors, $file, &$scopeBenchmarkTime, $outerNodeCallback, $analyserResultCache): void {
 						$this->benchmarkEnd($scopeBenchmarkTime, 'scope');
 						if ($outerNodeCallback !== null) {
 							$outerNodeCallback($node, $scope);
 						}
 						$uniquedAnalysedCodeExceptionMessages = [];
 						foreach ($this->registry->getRules(get_class($node)) as $rule) {
+							if ($analyserResultCache === null && $rule instanceof DependencyResolverRule) {
+								continue;
+							}
+
 							try {
 								$ruleBenchmarkTime = $this->benchmarkStart();
 								$ruleErrors = $rule->processNode($node, $scope);
@@ -242,6 +258,10 @@ class Analyser
 				return $b <=> $a;
 			});
 			file_put_contents($this->benchmarkFile, Json::encode($this->benchmarkData, Json::PRETTY));
+		}
+
+		if ($analyserResultCache !== null) {
+			$analyserResultCache->saveResult($filesToAnalyse, $errors);
 		}
 
 		$unmatchedIgnoredErrors = $this->ignoreErrors;
