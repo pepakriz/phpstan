@@ -1,8 +1,10 @@
 <?php declare(strict_types = 1);
 
-namespace PHPStan\Analyser;
+namespace PHPStan\Analyser\ResultCache;
 
-class AnalyserResultCacheRequirements
+use PHPStan\Analyser\Error;
+
+class ResultCacheRequirements
 {
 
 	/** @var string[] */
@@ -38,6 +40,11 @@ class AnalyserResultCacheRequirements
 	public function getErrors(): array
 	{
 		return $this->errors;
+	}
+
+	public function appendError(Error $error): void
+	{
+		$this->errors[] = $error;
 	}
 
 }

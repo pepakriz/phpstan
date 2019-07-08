@@ -4,6 +4,7 @@ namespace PHPStan\Analyser;
 
 use Nette\Utils\Json;
 use PHPStan\Analyser\ResultCache\ResultCache;
+use PHPStan\Analyser\ResultCache\ResultCacheRequirements;
 use PHPStan\Dependency\DependencyResolverRule;
 use PHPStan\File\FileHelper;
 use PHPStan\Node\FileNode;
@@ -133,20 +134,15 @@ class Analyser
 			return $errors;
 		}
 
-		if ($analyserResultCache !== null) {
-			$analyserResultCacheRequirements = $analyserResultCache->getRequirements($files);
-			$errors = $analyserResultCacheRequirements->getErrors();
-			$filesToAnalyse = $analyserResultCacheRequirements->getFiles();
-		} else {
-			$filesToAnalyse = $files;
-		}
+		$analyserResultCacheRequirements = $analyserResultCache !== null
+			? $analyserResultCache->getRequirements($files)
+			: new ResultCacheRequirements($files, []);
 
 		$this->nodeScopeResolver->setAnalysedFiles($files);
 		$internalErrorsCount = 0;
 		$reachedInternalErrorsCountLimit = false;
-		foreach ($filesToAnalyse as $file) {
+		foreach ($analyserResultCacheRequirements->getFiles() as $file) {
 			try {
-				$fileErrors = [];
 				if ($preFileCallback !== null) {
 					$preFileCallback($file);
 				}
@@ -155,7 +151,7 @@ class Analyser
 					$parserBenchmarkTime = $this->benchmarkStart();
 					$parserNodes = $this->parser->parseFile($file);
 					$this->benchmarkEnd($parserBenchmarkTime, 'parser');
-					$nodeCallback = function (\PhpParser\Node $node, Scope $scope) use (&$fileErrors, $file, &$scopeBenchmarkTime, $outerNodeCallback, $analyserResultCache): void {
+					$nodeCallback = function (\PhpParser\Node $node, Scope $scope) use ($analyserResultCacheRequirements, $file, &$scopeBenchmarkTime, $outerNodeCallback, $analyserResultCache): void {
 						$this->benchmarkEnd($scopeBenchmarkTime, 'scope');
 						if ($outerNodeCallback !== null) {
 							$outerNodeCallback($node, $scope);
@@ -176,7 +172,7 @@ class Analyser
 								}
 
 								$uniquedAnalysedCodeExceptionMessages[$e->getMessage()] = true;
-								$fileErrors[] = new Error($e->getMessage(), $file, $node->getLine(), false);
+								$analyserResultCacheRequirements->appendError(new Error($e->getMessage(), $file, $node->getLine(), false));
 								continue;
 							}
 
@@ -200,7 +196,7 @@ class Analyser
 										$fileName = $ruleError->getFile();
 									}
 								}
-								$fileErrors[] = new Error($message, $fileName, $line);
+								$analyserResultCacheRequirements->appendError(new Error($message, $fileName, $line));
 							}
 						}
 
@@ -216,23 +212,21 @@ class Analyser
 						$nodeCallback
 					);
 				} elseif (is_dir($file)) {
-					$fileErrors[] = new Error(sprintf('File %s is a directory.', $file), $file, null, false);
+					$analyserResultCacheRequirements->appendError(new Error(sprintf('File %s is a directory.', $file), $file, null, false));
 				} else {
-					$fileErrors[] = new Error(sprintf('File %s does not exist.', $file), $file, null, false);
+					$analyserResultCacheRequirements->appendError(new Error(sprintf('File %s does not exist.', $file), $file, null, false));
 				}
 				if ($postFileCallback !== null) {
 					$postFileCallback($file);
 				}
-
-				$errors = array_merge($errors, $fileErrors);
 			} catch (\PhpParser\Error $e) {
-				$errors[] = new Error($e->getMessage(), $file, $e->getStartLine() !== -1 ? $e->getStartLine() : null, false);
+				$analyserResultCacheRequirements->appendError(new Error($e->getMessage(), $file, $e->getStartLine() !== -1 ? $e->getStartLine() : null, false));
 			} catch (\PHPStan\Parser\ParserErrorsException $e) {
 				foreach ($e->getErrors() as $error) {
-					$errors[] = new Error($error->getMessage(), $file, $error->getStartLine() !== -1 ? $error->getStartLine() : null, false);
+					$analyserResultCacheRequirements->appendError(new Error($error->getMessage(), $file, $error->getStartLine() !== -1 ? $error->getStartLine() : null, false));
 				}
 			} catch (\PHPStan\AnalysedCodeException $e) {
-				$errors[] = new Error($e->getMessage(), $file, null, false);
+				$analyserResultCacheRequirements->appendError(new Error($e->getMessage(), $file, null, false));
 			} catch (\Throwable $t) {
 				if ($debug) {
 					throw $t;
@@ -245,7 +239,7 @@ class Analyser
 					"\n",
 					'https://github.com/phpstan/phpstan/issues/new'
 				);
-				$errors[] = new Error($internalErrorMessage, $file);
+				$analyserResultCacheRequirements->appendError(new Error($internalErrorMessage, $file));
 				if ($internalErrorsCount >= $this->internalErrorsCountLimit) {
 					$reachedInternalErrorsCountLimit = true;
 					break;
@@ -261,12 +255,12 @@ class Analyser
 		}
 
 		if ($analyserResultCache !== null) {
-			$analyserResultCache->saveResult($filesToAnalyse, $errors);
+			$analyserResultCache->updateCache($analyserResultCacheRequirements);
 		}
 
 		$unmatchedIgnoredErrors = $this->ignoreErrors;
 		$addErrors = [];
-		$errors = array_values(array_filter($errors, function (Error $error) use (&$unmatchedIgnoredErrors, &$addErrors): bool {
+		$errors = array_values(array_filter($analyserResultCacheRequirements->getErrors(), function (Error $error) use (&$unmatchedIgnoredErrors, &$addErrors): bool {
 			foreach ($this->ignoreErrors as $i => $ignore) {
 				$shouldBeIgnored = false;
 				if (is_string($ignore)) {

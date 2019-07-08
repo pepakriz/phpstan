@@ -4,7 +4,6 @@ namespace PHPStan\Analyser\ResultCache;
 
 use Nette\Utils\Json;
 use Nette\Utils\Strings;
-use PHPStan\Analyser\AnalyserResultCacheRequirements;
 use PHPStan\Analyser\Error;
 use PHPStan\Analyser\ResultCache\Strategy\ResultCacheStrategy;
 use PHPStan\Dependency\DependencyResolverRule;
@@ -69,11 +68,11 @@ class ResultCache
 	/**
 	 * @param string[] $files
 	 */
-	public function getRequirements(array $files): AnalyserResultCacheRequirements
+	public function getRequirements(array $files): ResultCacheRequirements
 	{
 		$data = $this->getData();
 		if ($data === null) {
-			return new AnalyserResultCacheRequirements($files, []);
+			return new ResultCacheRequirements($files, []);
 		}
 
 		/** @var string[][] $sourceChangedFiles */
@@ -122,15 +121,14 @@ class ResultCache
 			}
 		}
 
-		return new AnalyserResultCacheRequirements($sourceChangedFiles, $errors);
+		return new ResultCacheRequirements($sourceChangedFiles, $errors);
 	}
 
-	/**
-	 * @param string[] $files
-	 * @param string[]|\PHPStan\Analyser\Error[] $errors
-	 */
-	public function saveResult(array $files, array $errors): void
+	public function updateCache(ResultCacheRequirements $resultCacheRequirements): void
 	{
+		$files = $resultCacheRequirements->getFiles();
+		$errors = $resultCacheRequirements->getErrors();
+
 		$data = $this->getData();
 		if ($data === null) {
 			$data = [
