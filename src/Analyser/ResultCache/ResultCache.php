@@ -7,17 +7,17 @@ use Nette\Utils\Strings;
 use PHPStan\Analyser\Error;
 use PHPStan\Analyser\ResultCache\Strategy\ResultCacheStrategy;
 use PHPStan\Dependency\DependencyResolverRule;
-use PHPStan\PhpDoc\TypeNodeResolver;
 use ReflectionClass;
+use function phpversion;
+use function sha1;
 
 class ResultCache
 {
 
+	const CACHE_VERSION = '1';
+
 	/** @var string */
 	private $cacheFile;
-
-	/** @var TypeNodeResolver */
-	private $typeNodeResolver;
 
 	/** @var \PHPStan\Analyser\ResultCache\Strategy\ResultCacheStrategy */
 	private $resultCacheStrategy;
@@ -30,13 +30,11 @@ class ResultCache
 
 	public function __construct(
 		string $cacheFile,
-		TypeNodeResolver $typeNodeResolver,
 		ResultCacheStrategy $resultCacheStrategy,
 		DependencyResolverRule $dependencyResolverRule
 	)
 	{
 		$this->cacheFile = $cacheFile;
-		$this->typeNodeResolver = $typeNodeResolver;
 		$this->resultCacheStrategy = $resultCacheStrategy;
 		$this->dependencyResolverRule = $dependencyResolverRule;
 	}
@@ -264,7 +262,13 @@ class ResultCache
 
 	private function getCacheHash(): string
 	{
-		return sha1($this->typeNodeResolver->getCacheKey());
+		$hashData = [
+			self::CACHE_VERSION,
+			ComposerHash::HASH,
+			phpversion(),
+		];
+
+		return sha1(Json::encode($hashData));
 	}
 
 }

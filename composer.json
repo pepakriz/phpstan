@@ -28,6 +28,7 @@
 		"ext-soap": "*",
 		"ext-zip": "*",
 		"brianium/paratest": "^2.0",
+		"composer/composer": "^1.8",
 		"consistence/coding-standard": "^3.5",
 		"dealerdirect/phpcodesniffer-composer-installer": "^0.4.4",
 		"jakub-onderka/php-parallel-lint": "^1.0",
@@ -48,6 +49,10 @@
 		"branch-alias": {
 			"dev-master": "0.12-dev"
 		}
+	},
+	"scripts": {
+		"post-update-cmd":  "PHPStan\\Composer\\Installer::dumpComposerHash",
+		"post-install-cmd": "PHPStan\\Composer\\Installer::dumpComposerHash"
 	},
 	"autoload": {
 		"psr-4": {
