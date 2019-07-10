@@ -24,19 +24,17 @@ class Installer implements PluginInterface, EventSubscriberInterface
 {
 
 	/** @var string */
-	private static $generatedClassTemplate = <<<'PHP'
-<?php declare(strict_types = 1);
+	private static $generatedClassTemplate = '<?php declare(strict_types = 1);
 
 namespace PHPStan\Analyser\ResultCache;
 
 class ComposerHash
 {
 
-	const HASH = '%s';
+	public const HASH = \'%s\';
 
 }
-
-PHP;
+';
 
 	public function activate(Composer $composer, IOInterface $io): void
 	{

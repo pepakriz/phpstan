@@ -8,13 +8,14 @@ use PHPStan\Analyser\Error;
 use PHPStan\Analyser\ResultCache\Strategy\ResultCacheStrategy;
 use PHPStan\Dependency\DependencyResolverRule;
 use ReflectionClass;
-use function phpversion;
-use function sha1;
 
 class ResultCache
 {
 
-	const CACHE_VERSION = '1';
+	private const CACHE_VERSION = '1';
+
+	/** @var string|null */
+	private $computedCache;
 
 	/** @var string */
 	private $cacheFile;
@@ -169,10 +170,6 @@ class ResultCache
 
 		// Add or update errors
 		foreach ($errors as $error) {
-			if (!$error instanceof Error) {
-				continue;
-			}
-
 			$file = $error->getFile();
 			$dependency = null;
 
@@ -262,13 +259,25 @@ class ResultCache
 
 	private function getCacheHash(): string
 	{
-		$hashData = [
-			self::CACHE_VERSION,
-			ComposerHash::HASH,
-			phpversion(),
-		];
+		if ($this->computedCache === null) {
+			$extensionVersions = [];
+			foreach (get_loaded_extensions() as $extension) {
+				$extensionVersions[$extension] = phpversion($extension);
+			}
 
-		return sha1(Json::encode($hashData));
+			ksort($extensionVersions);
+
+			$hashData = [
+				'localCacheVersion' => self::CACHE_VERSION,
+				'composerHash' => ComposerHash::HASH,
+				'phpVersion' => phpversion(),
+				'extensionVersions' => $extensionVersions,
+			];
+
+			$this->computedCache = sha1(Json::encode($hashData));
+		}
+
+		return $this->computedCache;
 	}
 
 }
